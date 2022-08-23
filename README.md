@@ -13,7 +13,7 @@ It's based on the following principles:
 * **Interopability**: Programs should be able to interact with each other & the broader system.
 * **Flexibility**: Our notes and systems shouldn't be locked into someone else's templates.
 * **Automatism**: We should be able to work on our projects in a comfortable flow state.
-* **Efficiency**: We should minimize repetitive busy work wherever that is possible.
+* **Efficiency**: We should minimize repetitive busy work we find unpleasant or distracting.
 
 ## Required Plugins
 This list will be added to over time as I flesh out the system.
