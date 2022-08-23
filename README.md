@@ -35,12 +35,12 @@ Any CSS snippets I include will be based on this theme.
 These are just some other free utilities that I find helpful.
 * **Autohotkey**: text expander that will work outside of Obsidian
 * **Everything** by Void Tools: very fast yet powerful search tool
-* **Desk Pins**: quick & easy tool to pin windows on your pc
+* **DeskPins**: quick & easy tool to pin windows on your pc
 * **Lightscreen**: quick & easy screenshot tool
 * **AltDrag**: less finnicky window movement
 * **ReNamer**: quickly rename files in bulk (don't use in vaults!)
 * **Notepad++**: lightweight text editor with dark theme & code highlights
 * **VSCode**: lightweight IDE that can open folders as projects
 * **Audacity**: record and edit audio files
-* **Krita**: for creating and editing raster images
+* **Krita**: create and edit raster images, simple animations
 * **OBS Studio**: for recording videos and livestreaming 
