@@ -33,7 +33,7 @@ Any CSS snippets I include will be based on this theme.
 
 ## Recommended Software (Windows)
 These are just some other free utilities that I find helpful.
-* **Autohotkey**: text expander that will work outside of Obsidian
+* **AutoHotkey**: text expander that will work outside of Obsidian
 * **Everything** by Void Tools: very fast yet powerful search tool
 * **DeskPins**: quick & easy tool to pin windows on your pc
 * **Lightscreen**: quick & easy screenshot tool
