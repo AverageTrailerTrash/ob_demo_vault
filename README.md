@@ -8,7 +8,7 @@ This list will be added to over time as I flesh out the system.
 * Templater
 * CustomJS
 
-**Core Plugins**: File Explorer, Quick Switcher, Search, Templates, 
+**Core Plugins**: File Explorer, Quick Switcher, Search, Templates
 
 ## Recommended Plugins
 * Dataview
