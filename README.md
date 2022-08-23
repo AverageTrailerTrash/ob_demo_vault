@@ -3,6 +3,18 @@ This will contain an Obsidian vault that demonstrates the category &amp; automat
 
 It's in the very early stages; if you're peeking in before any proper releases, expect things to break.
 
+## Primary Use
+
+This setup is designed with creative work and general organization in mind.
+
+It's based on the following principles:
+
+* **Permanence**: What we care about should have a permanent identity and place to live.
+* **Interopability**: Programs should be able to interact with each other & the broader system.
+* **Flexibility**: Our notes and systems shouldn't be locked into someone else's templates.
+* **Automatism**: We should be able to work on our projects in a comfortable flow state.
+* **Efficiency**: We should minimize repetitive busy work wherever that is possible.
+
 ## Required Plugins
 This list will be added to over time as I flesh out the system.
 * **Templater**: allows us to run js from templates
