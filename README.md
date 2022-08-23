@@ -27,7 +27,8 @@ This list will be added to over time as I flesh out the system.
 * **Dataview**: more advanced queries for automatic indexes
 * **Recent Files**: quickly access recent files from sidebar
 * **Various Complements**: IDE-style autofill / text suggestions
-
+* **Advanced Tables**: painless markdown table creation
+ 
 **Core Plugins**: Page Preview, Workspaces
 
 ## Incompatible Plugins
