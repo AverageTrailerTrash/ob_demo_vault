@@ -23,6 +23,10 @@ It's based on the following principles:
 * **java_applet**: This will include a small program for desktop users that helps Obsidian vaults based on this structure communicate with the rest of your computer.
 * **documentation**: This will include documentation and tips for running this system, its add-ons, and extending it for your own use cases.
 
+I recommend starting with the main vault and adding packages over time. 
+
+Jumping into a whole new homekeeping & productivity system at once can be overwhelming.
+
 ## Required Plugins
 This list will be added to over time as I flesh out the system.
 * **Templater**: allows us to run js from templates
