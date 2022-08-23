@@ -19,7 +19,7 @@ It's based on the following principles:
 * **base_demo_vault**: This will include just the base scripts, folders, etc. needed to implement the category-ID system, including tools to convert existing vaults.
 * **main_demo_vault**: This will include additional systems that balance out the structure of the category-ID system with tools for more freeform note creation.
 * **life_demo_vault**: This will include many additional systems that I think would be useful for the average individual to handle their daily life and activities.
-* **inidvidual_packages**: This will include each system from the other vaults & more as separate add-ons that can be installed to any vault based on this struture. 
+* **individual_packages**: This will include each system from the other vaults & more as separate add-ons that can be installed to any vault based on this struture. 
 * **java_applet**: This will include a small program for desktop users that helps Obsidian vaults based on this structure communicate with the rest of your computer.
 * **documentation**: This will include documentation and tips for running this system, its add-ons, and extending it for your own use cases.
 
