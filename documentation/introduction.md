@@ -13,4 +13,4 @@ For the above example, we may have file "lct/LCT99 - Mordor from LOTR" and file 
 
 If we wanted to add some information about how LOC99 and LOC215 were related to each other, we'd make a new "relationship" type file connected to both, rather than the repeating information. Say, say "rel/REL776 - Place A & Place B".
 
-* Certain exceptions to file placement and naming conventions are made where functionally necessary, psychologically beneficial, or otherwise appropriate. 
+* Certain exceptions to file placement and naming conventions are made where functionally necessary, psychologically beneficial, or otherwise appropriate.  
