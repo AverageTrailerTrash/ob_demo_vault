@@ -33,21 +33,21 @@ If you run into any issues, try adding a space after the last >. Templater somet
 
 To write something to the file you're runinng the javascript template in, you'll need to explicitly tell it to return that line like so:
 
-   <%* 
-   your javascript can go here
-   tR += what you want to return goes here;
-   %>
+    <%* 
+    your javascript can go here
+    tR += what you want to return goes here;
+    %>
 
 (If you don't include the +, it'll replace whatever else is in the stream that's supposed to be pasted. So be careful to include it.)
 
 For example:
 
-   <%*
-   const {manageIDs} = customJS;
-   var myConfigFileContents = manageIDs.getHolConfig();
-   tR = myConfigFileContents;
-   %>
+    <%*
+    const {manageIDs} = customJS;
+    var myConfigFileContents = manageIDs.getHolConfig();
+    tR = myConfigFileContents;
+    %>
 
 may return something like:
 
-    startingID:: 50, catLength:: 3
+     startingID:: 50, catLength:: 3
