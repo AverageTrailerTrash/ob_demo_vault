@@ -11,6 +11,7 @@ These need to be converted from my personal vault into a more standard format.
 Associated templates may be added alongside them, or a bit later. Need to make sure the naming structure is solid beforehand.
 
 ## Major Functions Coming Later
+* various for editing config settings
 * various for converting existing tags & folders to new or existing categories
 * renameCategory - discouraged but needs to exist for edge cases
 * mergeCategories - \^
