@@ -1,6 +1,10 @@
 This vault will include just the base logic needed for managing a category-id system that utilizes folders and metadata in Obsidian.
 
-## Major Functions Coming Next 
+## Coming Next
+* fixing the incorrect folder structure & naming conventions
+* reconfiguring functions to use dataview API to improve performance & enable blind IDs.
+
+## Coming Soon 
 These need to be converted from my personal vault into a more standard format.
 * various for accessing categories
 * various for handling folders
@@ -10,7 +14,7 @@ These need to be converted from my personal vault into a more standard format.
 
 Associated templates may be added alongside them, or a bit later. Need to make sure the naming structure is solid beforehand.
 
-## Major Functions Coming Later
+## Coming Later
 * various for editing config settings
 * various for converting existing tags & folders to new or existing categories
 * renameCategory - discouraged but needs to exist for edge cases
