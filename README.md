@@ -76,3 +76,4 @@ These are just some other free utilities that I find helpful.
 * **Audacity**: record and edit audio files
 * **Krita**: create and edit raster images, simple animations
 * **OBS Studio**: for recording videos and livestreaming 
+* **LibreOffice**: handles rich text, spreadsheets, slideshows & more
