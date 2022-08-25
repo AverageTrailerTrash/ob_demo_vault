@@ -3,6 +3,12 @@ This will contain an Obsidian vault that demonstrates the category &amp; automat
 
 It's in the very early stages; if you're peeking in before any proper releases, expect things to break.
 
+## Status: 
+
+* Does **not** have all the base scripts and templates needed for new users to get started. 
+
+* Currently working on rebuilding the scripts to use the Dataview API for greater efficiency.
+
 ## Primary Use
 
 This setup is designed with creative work and general organization in mind.
@@ -21,7 +27,8 @@ It's based on the following principles:
 * **life_demo_vault**: This will include many additional systems that I think would be useful for the average individual to handle their daily life and activities.
 * **individual_packages**: This will include each system from the other vaults & more as separate add-ons that can be installed to any vault based on this struture. 
 * **java_applet**: This will include a small program for desktop users that helps Obsidian vaults based on this structure communicate with the rest of your computer.
-* **documentation**: This will include documentation and tips for running this system, its add-ons, and extending it for your own use cases.
+
+[Documentation can now be found at the wiki.](https://github.com/AverageTrailerTrash/ob_demo_vault/wiki)
 
 I recommend starting with the main vault and adding packages over time. 
 
@@ -31,12 +38,12 @@ Jumping into a whole new homekeeping & productivity system at once can be overwh
 This list will be added to over time as I flesh out the system.
 * **Templater**: allows us to run js from templates
 * **CustomJS**: allows us to break js into reusable functions
+* **Dataview**: more advanced queries, api gives easy access to metadata
 * **Advanced URI**: link notes from external tools & run commands from links
 
 **Core Plugins**: File Explorer, Quick Switcher, Search, Templates
 
 ## Recommended Plugins
-* **Dataview**: more advanced queries for automatic indexes
 * **Recent Files**: quickly access recent files from sidebar
 * **Various Complements**: IDE-style autofill / text suggestions
 * **Advanced Tables**: painless markdown table creation
