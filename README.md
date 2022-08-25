@@ -31,7 +31,7 @@ Jumping into a whole new homekeeping & productivity system at once can be overwh
 This list will be added to over time as I flesh out the system.
 * **Templater**: allows us to run js from templates
 * **CustomJS**: allows us to break js into reusable functions
-* * **Dataview**: more advanced queries, api gives easy access to metadata
+* **Dataview**: more advanced queries, api gives easy access to metadata
 * **Advanced URI**: link notes from external tools & run commands from links
 
 **Core Plugins**: File Explorer, Quick Switcher, Search, Templates
