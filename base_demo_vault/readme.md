@@ -1,7 +1,7 @@
 This vault will include just the base logic needed for managing a category-id system that utilizes folders and metadata in Obsidian.
 
 ## Coming Next
-* fixing the incorrect folder structure & naming conventions
+* ~~fixing the incorrect folder structure & naming conventions~~ ✓
 * reconfiguring functions to use dataview API to improve performance & enable blind IDs.
 
 ## Coming Soon 
