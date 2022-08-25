@@ -1,2 +1,0 @@
-# Functions in: managedIDS.js
-
