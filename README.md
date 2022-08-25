@@ -3,6 +3,12 @@ This will contain an Obsidian vault that demonstrates the category &amp; automat
 
 It's in the very early stages; if you're peeking in before any proper releases, expect things to break.
 
+Status: 
+
+* Does **not** have all the base scripts and templates for new users to get started. 
+
+* Currently working on rebuilding the scripts to use the Dataview API for greater efficiency.
+
 ## Primary Use
 
 This setup is designed with creative work and general organization in mind.
