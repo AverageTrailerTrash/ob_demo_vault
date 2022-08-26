@@ -130,14 +130,33 @@
 		return configValue; 
 	}
 		
-	// Accessing IDs // 
+	// Getting config_hol_base Values // 
 	
 	async getIdentifier() {
 		console.debug("getIdentifier() was called.");
+		//returns the string value of the identifier key as set in the config
 		var defaultID = await this.getHolBaseConfigValue("identifier");
 		console.debug("getIdentifier is returning: ",defaultID);
 		return defaultID;
 	}
+	
+	async getCatLength(){
+		console.debug("getCatLength() was called.");
+		// returns the string value of the category length as set in the config
+		var catLength = await this.getHolBaseConfigValue("catLength");
+		console.debug("getCatLength is returning: ",catLength);
+		return catLength;
+	}
+	
+	async getStartingID(){
+		console.debug("getStartingID() was called.");
+		// returns the string value of the starting ID as set in the config
+		var startingID = await this.getHolBaseConfigValue("startingID");
+		console.debug("getStartingID is returning: ",startingID);
+		return startingID;
+	}
+	
+	// Accessing IDs // 
 	
 	async getID(targetFileDV){
 		console.debug("getID(",targetFileDV,") was called.");
@@ -199,12 +218,112 @@
 	
 	async doesCatDirExist(cat){
 		// this requires a function to check if a file path exists
+		
 	}
 	
 	async getAllCats() {
 		// this requires a function to get lines of file 
 		// and split by ::, cats before, leave out blanks
 		// returns an array of all categories' IDs
+	}
+	
+	// Accessing Files in Bulk // 
+	
+	async getValueFromStringDV(){
+		// we should be able to do fileDV.values or fileDV.values[0]
+	}
+	
+	async getFilesInCategoryDV(cat) {
+		console.debug("getFilesInCategoryDV(" + cat + ") was called.");
+		// returns a list of dataview-type files in the given category
+		const dv = await DataviewAPI; var defaultID = await this.getIdentifier();
+		if (cat == null) { throw new Error("No category was provided to get files from! src: getFilesInCategoryDV"); }
+		cat = await cat.toLowerCase();
+		var fileList = await dv.pages().where(p => {
+			var p_bool = false;
+			if (p[defaultID] != undefined) { 
+				var p_id = p[defaultID].toString();
+				p_bool = p_id.includes(cat); 
+			}
+			return p_bool; 
+		});
+		if (fileList.length == 0){ fileList = null; }
+		if (fileList == null) { console.warn("Failed to retrieve dataview-type files! Directory may be empty. src: getFilesInCategoryDV"); }
+		console.debug("getFilesInCategoryDV is returning: ",fileList);
+		return fileList;
+	}
+	
+	async getIDsInCategoryDV(cat){
+		console.debug("getIDsInCategoryDV(" + cat + ") was called.");
+		// returns a list of IDs in the given category
+		var defaultID = await this.getIdentifier();
+		if (cat == null) { throw new Error("No category was provided to get files from! src: getIDsInCategoryDV"); }
+		var fileListDV = await this.getFilesInCategoryDV(cat);
+		var idList = new Array();
+		var i=0; while (i<fileListDV.length){idList[i] = await fileListDV[i][defaultID]; i++}
+		console.debug("getIDsInCategoryDV is returning: ",idList);
+		return idList;
+	}
+	
+	async getIDNumsInCatDV(cat){
+		console.debug("getIDNumsInCatDV(" + cat + ") was called.");
+		// returns a list of IDs in the given category
+		if (cat == null) { throw new Error("No category was provided to get files from! src: getIDNumsInCatDV"); }
+		var fileListDV = await this.getFilesInCategoryDV(cat);
+		var idList = new Array();
+		var i=0; while (i<fileListDV.length){idList[i] = await fileListDV[i].idnum; i++}
+		console.debug("getIDNumsInCatDV is returning: ",idList);
+		return idList;
+	}
+	
+	async removeCatFromIDString(givenID){
+		console.debug("removeCatFromIDString(" + givenID + ") was called.");
+		// This extracts the first cat-length characters in a string
+		var catLength = await this.getCatLength();
+		var strippedID = givenID.substring(catLength);
+		console.debug("removeCatFromIDString is returning: ",strippedID);
+		return strippedID;
+	}
+	
+	async getIDNumsFromIDList(idList){
+		console.debug("getIDNumsFromIDList(" + idList + ") was called.");
+		// this extracts the ID numbers from a list of IDs
+		var i=0; while (i<idList.length){
+			idList[i] = await this.removeCatFromIDString(idList[i]); 
+			i++
+			}
+		console.debug("getIDNumsFromIDList is returning: ",idList);
+		return idList;
+	}
+	
+	async getIDNumsInCatByIDDV(cat){
+		// this is a less efficient way of getting the idnums.
+		// it exists for edge cases where a user may not have assigned the idnum key to their vault
+		// please use getIDNumsInCatDV wherever possible
+		console.debug("getIDNumsInCatByIDDV(" + cat + ") was called.");
+		var idList = await this.getIDsInCategoryDV(cat);
+		var numList = await this.getIDNumsFromIDList(idList);
+		console.debug("getIDNumsInCatByIDDV is returning: ",numList);
+		return numList;
+	}
+		
+	async getNextIDNumInCat(cat){
+		console.debug("getNextIDNumInCat(" + cat + ") was called.");
+		var minimumID = await this.getStartingID();
+		var idList = await this.getIDNumsInCatDV(cat);
+		var idList = await idList.sort();
+		var lastID = idList[idList.length - 1];
+		var nextID = +lastID + 1;
+		console.debug("getNextIDNumInCat is returning: ",nextID);
+		return nextID;
+	}
+	
+	async getNextIDInCat(cat){
+		console.debug("getNextIDInCat(" + cat + ") was called.");
+		var nextIDNum = await this.getNextIDNumInCat(cat);
+		var nextID = cat + nextIDNum;
+		console.debug("getNextIDInCat is returning: ",nextID);
+		return nextID;
 	}
 	
 		
@@ -259,32 +378,79 @@
 		return configLines;
 	}
 	
+	// String Utiliites //
+	
+	removeLeadingSpaces(targetString){
+		console.debug("removeLeadingSpaces(" + targetString + ") was called.");
+		// this returns the provided string without any leading spaces
+		if (targetString == null) { throw new Error("No target string provided! src: removeLeadingSpaces"); }
+		while (targetString.charAt(0) == " ") { targetString = targetString.substr(1); }
+		console.debug("removeLeadingSpaces is returning: ",targetString);
+		return targetString;
+	}
+	
 	getKeyFromString(targetString){
-		console.debug("getKeyFromString() was called.");
+		console.debug("getKeyFromString(" + targetString + ") was called.");
+		// this returns the text before :: in a string, generally the key of a key:: value pair
+		if (targetString == null) { throw new Error("No target string provided! src: getKeyFromString"); }
 		var key = targetString.split("::")[0];
 		console.debug("getKeyFromString is returning: ",key);
 		return key;
 	}
 	
+	async getValueFromString(targetString){
+		console.debug("getValueFromString(" + targetString + ") was called.");
+		// this returns the text after :: in a string minus any leading spaces, generally the value of a key:: value pair
+		if (targetString == null) { throw new Error("No target string provided! src: getValueFromString"); }
+		var value = targetString.split("::")[1];
+		value = await this.removeLeadingSpaces(value);
+		console.debug("getValueFromString is returning: ",value);
+		return value;
+	}
+	
+	// Accessing Keys & Values in Bulk // 
+	
 	async getListedFileKeys(targetFile){
-		console.debug("getListedFileKeys() was called.");
+		console.debug("getListedFileKeys(", targetFile, ") was called.");
 		// returns the keys in the specified flie; requires file with a key:: value\nkey::value format
 		if (targetFile == null) { throw new Error("No target file provided! src: getListedFileKeys"); }
 		var fileLines = await this.getFileLines(targetFile);
 		var i = 0;
-		while (i < fileLines.length){fileLines[i] = fileLines[i].split("::")[0]; i++;}
+		while (i < fileLines.length){fileLines[i] = this.getKeyFromString(fileLines[i]); i++;}
 		console.debug("getListedFileKeys is returning: ",fileLines);
 		return fileLines;
 	}
 	
 	async getListedFileKeysByPath(path){
-		console.debug("getListedFileKeysByPath() was called.");
+		console.debug("getListedFileKeysByPath(" + path + ") was called.");
 		// returns the keys in the specified flie; requires file with a key:: value\nkey::value format
 		if (path == null) { throw new Error("No path provided to target file! src: getListedFileKeysByPath"); }
 		var fileLines = await this.getFileLinesByPath(path);
 		var i = 0;
-		while (i < fileLines.length){fileLines[i] = fileLines[i].split("::")[0]; i++;}
+		while (i < fileLines.length){fileLines[i] = this.getKeyFromString(fileLines[i]); i++;}
 		console.debug("getListedFileKeysByPath is returning: ",fileLines);
+		return fileLines;
+	}
+	
+	async getListedFileValues(targetFile){
+		console.debug("getListedFileValues(", targetFile, ") was called.");
+		// returns the values in the specified flie; requires file with a key:: value\nkey::value format
+		if (targetFile == null) { throw new Error("No target file provided! src: getListedFileValues"); }
+		var fileLines = await this.getFileLines(targetFile);
+		var i = 0;
+		while (i < fileLines.length){fileLines[i] = this.getValueFromString(fileLines[i]); i++;}
+		console.debug("getListedFileValues is returning: ",fileLines);
+		return fileLines;
+	}
+	
+	async getListedFileValuesByPath(path){
+		console.debug("getListedFileValuesByPath(" + path + ") was called.");
+		// returns the values in the specified flie; requires file with a key:: value\nkey::value format
+		if (path == null) { throw new Error("No path provided to target file! src: getListedFileValuesByPath"); }
+		var fileLines = await this.getFileLinesByPath(path);
+		var i = 0;
+		while (i < fileLines.length){fileLines[i] = await this.getValueFromString(fileLines[i]); i++;}
+		console.debug("getListedFileValuesByPath is returning: ",fileLines);
 		return fileLines;
 	}
 	
@@ -307,6 +473,17 @@
 		var configPath = await this.getConfigFilePath(whichAuthor,whichConfig);
 		var configLines = await this.getListedFileKeysByPath(configPath);
 		console.debug("getConfigFileKeys is returning: ",configLines);
+		return configLines;
+	}
+
+	async getConfigFileValues(whichAuthor,whichConfig) {
+		console.debug("getConfigFileValues(" + whichAuthor + "," + whichConfig + ") was called.");
+		// returns an array of keys from the specified config file
+		if (whichAuthor == null) { throw new Error("No config author provided! src: getConfigFileValues"); }
+		if (whichConfig == null) { throw new Error("No config file specified! src: getConfigFileValues"); }
+		var configPath = await this.getConfigFilePath(whichAuthor,whichConfig);
+		var configLines = await this.getListedFileValuesByPath(configPath);
+		console.debug("getConfigFileValues is returning: ",configLines);
 		return configLines;
 	}
 	
@@ -344,10 +521,25 @@
 		console.debug("getHolBaseConfigKeys is returning: ",configLines);
 		return configLines;
 	}
+	
+	async getHolConfigValues(whichConfig){
+		console.debug("getHolConfigValues() was called.");
+		if (whichConfig == null) { throw new Error("No config file specified! src: getHolConfigValues"); }
+		var configLines = await this.getConfigFileValues("hol",whichConfig);
+		console.debug("getHolConfigValues is returning: ",configLines);
+		return configLines;
+	}
+	
+	async getHolBaseConfigValues(){
+		console.debug("getHolBaseConfigValues() was called.");
+		var configLines = await this.getHolConfigValues("base");
+		console.debug("getHolBaseConfigValues is returning: ",configLines);
+		return configLines;
+	}
 
 
 	
-	//// OLD CODE BELOW, NEEDS REFACTORING ////
+	//// OLD CODE BELOW, NEEDS REFACTORING OR REMOVAL ////
 		
 	async getCatList() {
 		// returns array of lines from the categories file
@@ -372,20 +564,8 @@
 		// return holConfigValue;
 	// }
 	
-	async getCatLength(holConfig){
-		// returns the string value of the category length as set in the config
-		holConfig = holConfig || await this.getHolConfig();
-		var catLength = await this.getHolConfigValue("catLength",holConfig);
-		return catLength;
-	}
-	
-	async getStartingID(holConfig){
-		// returns the string value of the starting ID as set in the config
-		holConfig = holConfig || await this.getHolConfig();
-		var startingID = await this.getHolConfigValue("startingID",holConfig);
-		return startingID;
-	}
-	
+		
+	/* 
 	async getNextID(cat, fileList) {
 		// return the string next ID of the given category
 		// if the starting ID is returned, there were no files of this cat found in the file list
@@ -429,7 +609,8 @@
 		}
 		
 		return nextID;
-    }
+    } */
+	
 	
 
 }
