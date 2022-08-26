@@ -218,6 +218,7 @@
 	
 	async doesCatDirExist(cat){
 		// this requires a function to check if a file path exists
+		// UNFINISHED
 		
 	}
 	
@@ -225,19 +226,22 @@
 		// this requires a function to get lines of file 
 		// and split by ::, cats before, leave out blanks
 		// returns an array of all categories' IDs
+		// we should have all we need to code this now!
+		// UNFINISHED
 	}
 	
 	// Accessing Files in Bulk // 
 	
 	async getValueFromStringDV(){
 		// we should be able to do fileDV.values or fileDV.values[0]
+		// UNFINISHED
 	}
 	
-	async getFilesInCategoryDV(cat) {
-		console.debug("getFilesInCategoryDV(" + cat + ") was called.");
+	async getFilesInCatDV(cat) {
+		console.debug("getFilesInCatDV(" + cat + ") was called.");
 		// returns a list of dataview-type files in the given category
 		const dv = await DataviewAPI; var defaultID = await this.getIdentifier();
-		if (cat == null) { throw new Error("No category was provided to get files from! src: getFilesInCategoryDV"); }
+		if (cat == null) { throw new Error("No category was provided to get files from! src: getFilesInCatDV"); }
 		cat = await cat.toLowerCase();
 		var fileList = await dv.pages().where(p => {
 			var p_bool = false;
@@ -248,20 +252,20 @@
 			return p_bool; 
 		});
 		if (fileList.length == 0){ fileList = null; }
-		if (fileList == null) { console.warn("Failed to retrieve dataview-type files! Directory may be empty. src: getFilesInCategoryDV"); }
-		console.debug("getFilesInCategoryDV is returning: ",fileList);
+		if (fileList == null) { console.warn("Failed to retrieve dataview-type files! Directory may be empty. src: getFilesInCatDV"); }
+		console.debug("getFilesInCatDV is returning: ",fileList);
 		return fileList;
 	}
 	
-	async getIDsInCategoryDV(cat){
-		console.debug("getIDsInCategoryDV(" + cat + ") was called.");
+	async getIDsInCatDV(cat){
+		console.debug("getIDsInCatDV(" + cat + ") was called.");
 		// returns a list of IDs in the given category
 		var defaultID = await this.getIdentifier();
-		if (cat == null) { throw new Error("No category was provided to get files from! src: getIDsInCategoryDV"); }
-		var fileListDV = await this.getFilesInCategoryDV(cat);
+		if (cat == null) { throw new Error("No category was provided to get files from! src: getIDsInCatDV"); }
+		var fileListDV = await this.getFilesInCatDV(cat);
 		var idList = new Array();
 		var i=0; while (i<fileListDV.length){idList[i] = await fileListDV[i][defaultID]; i++}
-		console.debug("getIDsInCategoryDV is returning: ",idList);
+		console.debug("getIDsInCatDV is returning: ",idList);
 		return idList;
 	}
 	
@@ -269,7 +273,7 @@
 		console.debug("getIDNumsInCatDV(" + cat + ") was called.");
 		// returns a list of IDs in the given category
 		if (cat == null) { throw new Error("No category was provided to get files from! src: getIDNumsInCatDV"); }
-		var fileListDV = await this.getFilesInCategoryDV(cat);
+		var fileListDV = await this.getFilesInCatDV(cat);
 		var idList = new Array();
 		var i=0; while (i<fileListDV.length){idList[i] = await fileListDV[i].idnum; i++}
 		console.debug("getIDNumsInCatDV is returning: ",idList);
@@ -301,7 +305,7 @@
 		// it exists for edge cases where a user may not have assigned the idnum key to their vault
 		// please use getIDNumsInCatDV wherever possible
 		console.debug("getIDNumsInCatByIDDV(" + cat + ") was called.");
-		var idList = await this.getIDsInCategoryDV(cat);
+		var idList = await this.getIDsInCatDV(cat);
 		var numList = await this.getIDNumsFromIDList(idList);
 		console.debug("getIDNumsInCatByIDDV is returning: ",numList);
 		return numList;
