@@ -181,26 +181,50 @@
 	
 	// Accessing Categories //
 	
-	async getCatDirectory(cat){
-		console.debug("getCatDirectory(" + cat + ") was called.");
-		// this returns the default directory of the given category
+	async getPathToCatList(){
 		var catListFileName = await this.getBaseStructure("cat_list_file");
 		var catListPath = await this.getBaseStructure("rawdata_folder") + "/" + catListFileName;
+		return catListPath;
+	}
+	
+	async getCatListFile(){
+		var catListPath = await this.getPathToCatList();
+		var catFile = await app.vault.getAbstractFileByPath(catListPath);
+		return catFile;
+	}
+	
+	
+	async getCatListFileDV(){
+		var catListPath = await this.getPathToCatList();
 		var catFile = await this.getDataviewFile(catListPath);
+		return catFile;
+	}
+	
+	async getCatDirectory(cat){
+		console.debug("getCatDirectory(" + cat + ") was called.");
+		// this returns the path of the default directory of the given category
+		var catFile = await this.getCatListFileDV();
 		var myCatDirectory = catFile[cat][0];
 		console.debug("getCatDirectory is returning: ",myCatDirectory);
-		return myCatDirectory;
+		return myCatDirectory; 
 	} 
 	
 	async getCatDesc(cat){
 		console.debug("getCatDesc(" + cat + ") was called.");
 		// this returns the descriptive title of the given category
-		var catListFileName = await this.getBaseStructure("cat_list_file");
-		var catListPath = await this.getBaseStructure("rawdata_folder") + "/" + catListFileName;
-		var catFile = await this.getDataviewFile(catListPath);
+		var catFile = await this.getCatListFileDV();
 		var myCatDesc = catFile[cat][1];
 		console.debug("getCatDesc is returning: ",myCatDesc);
 		return myCatDesc;
+	}
+	
+	async getCatTemplate(cat){
+		console.debug("getCatTemplate(" + cat + ") was called.");
+		// this returns the name of the default template of the given category
+		var catFile = await this.getCatListFileDV();
+		var myCatTpl = catFile[cat][2];
+		console.debug("getCatTemplate is returning: ",myCatTpl);
+		return myCatTpl;
 	}
 	
 	async doesCatExist(cat){
@@ -217,21 +241,27 @@
 	}
 	
 	async doesCatDirExist(cat){
-		// this requires a function to check if a file path exists
-		// UNFINISHED
-		
+		// this returns true or false depending on whether the category directory exists
+		// i.e. that it actually has a folder in the specified location
+		var catDirPath = await this.getCatDirectory(cat);
+		var doesDirExist = await this.doesDirectoryExist(catDirPath);
+		return doesDirExist;		
 	}
 	
 	async getAllCats() {
-		// this requires a function to get lines of file 
-		// and split by ::, cats before, leave out blanks
-		// returns an array of all categories' IDs
-		// we should have all we need to code this now!
-		// UNFINISHED
+		// this returns an array of all categories from the category_list
+		var catFile = await this.getCatListFile();
+		var catKeys = await this.getListedFileKeys(catFile);
+		return catKeys;
 	}
 	
-	async getAllCatsDV(){
-		
+	async doesDirectoryExist(path){
+		var checkDirectory = await app.vault.getAbstractFileByPath(path);
+		var doesDirExist = false;
+		if (checkDirectory != null) {
+			doesDirExist = true;
+		}
+		return doesDirExist;
 	}
 	
 	
@@ -323,9 +353,7 @@
 		var minimumID = await this.getStartingID();
 		var idList = await this.getIDNumsInCatDV(cat);
 		var idList = await idList.sort();
-		console.log("SEE ME: ", idList);
 		var lastID = idList[idList.length - 1];
-		console.log("SEE ME: ", lastID);
 		var nextID = +lastID + 1;
 		console.debug("getNextIDNumInCat is returning: ",nextID);
 		return nextID;
@@ -419,11 +447,6 @@
 		value = await this.removeLeadingSpaces(value);
 		console.debug("getValueFromString is returning: ",value);
 		return value;
-	}
-	
-	async getValueFromStringDV(targetString){
-		// we should be able to do fileDV.values or fileDV.values[0]
-		// UNFINISHED
 	}
 	
 	wrapStringWithSpacers(targetString){
@@ -525,7 +548,7 @@
 	
 	concatNewline(givenStringArray){
 		var resultString = "";
-		var i=0; while (i<givenStringArray.length) {
+		var i=0; while (i < givenStringArray.length) {
 			if (i == givenStringArray.length - 1){
 				resultString = resultString + givenStringArray[i];
 			} else {
@@ -547,38 +570,79 @@
 	
 	async getListedFileKeys(targetFile){
 		console.debug("getListedFileKeys(", targetFile, ") was called.");
-		// returns the keys in the specified flie; requires file with a key:: value\nkey::value format
+		// returns the keys in the specified file; requires file with a key:: value\nkey::value format
+		// blank lines and duplicate entries will be automatically removed
 		if (targetFile == null) { throw new Error("No target file provided! src: getListedFileKeys"); }
 		var fileLines = await this.getFileLines(targetFile);
+		var fileKeys = new Array();
+		var thisKey = "";
 		var i = 0;
-		while (i < fileLines.length){fileLines[i] = this.getKeyFromString(fileLines[i]); i++;}
-		console.debug("getListedFileKeys is returning: ",fileLines);
-		return fileLines;
+		while (i < fileLines.length){
+			thisKey = this.getKeyFromString(fileLines[i]);
+			if (thisKey != null && thisKey != ""){ 
+				fileKeys.push(thisKey); 
+			}
+			i++;
+		}
+		fileKeys.sort();
+		var fileKeysNoDupes = new Array();
+		i=0; while (i < fileKeys.length){
+			if (fileKeys[i] != fileKeys[i-1]){
+				fileKeysNoDupes.push(fileKeys[i]);
+			}
+			i++;
+		}
+		
+		console.debug("getListedFileKeys is returning: ",fileKeysNoDupes);
+		return fileKeysNoDupes;
 	}
 	
 	async getListedFileKeysByPath(path){
 		console.debug("getListedFileKeysByPath(" + path + ") was called.");
 		// returns the keys in the specified flie; requires file with a key:: value\nkey::value format
+		// blank lines and duplicate entries will be automatically removed
 		if (path == null) { throw new Error("No path provided to target file! src: getListedFileKeysByPath"); }
 		var fileLines = await this.getFileLinesByPath(path);
+		var fileKeys = new Array();
+		var thisKey = "";
 		var i = 0;
-		while (i < fileLines.length){fileLines[i] = this.getKeyFromString(fileLines[i]); i++;}
+		while (i < fileLines.length){
+			thisKey = this.getKeyFromString(fileLines[i]);
+			if (thisKey != null && thisKey != ""){ 
+				fileKeys.push(thisKey); 
+			}
+			i++;
+		}
+		fileKeys.sort();
+		var fileKeysNoDupes = new Array();
+		i=0; while (i < fileKeys.length){
+			if (fileKeys[i] != fileKeys[i-1]){
+				fileKeysNoDupes.push(fileKeys[i]);
+			}
+			i++;
+		}
 		console.debug("getListedFileKeysByPath is returning: ",fileLines);
 		return fileLines;
 	}
 	
 	async getListedFileValues(targetFile){
+		// Do not set this to remove line breaks & do not sort it. At the moment,
+		// this is mostly used for config files where the position of every line matters.
 		console.debug("getListedFileValues(", targetFile, ") was called.");
 		// returns the values in the specified flie; requires file with a key:: value\nkey::value format
 		if (targetFile == null) { throw new Error("No target file provided! src: getListedFileValues"); }
 		var fileLines = await this.getFileLines(targetFile);
 		var i = 0;
-		while (i < fileLines.length){fileLines[i] = this.getValueFromString(fileLines[i]); i++;}
+		while (i < fileLines.length){
+			fileLines[i] = this.getValueFromString(fileLines[i]); i++;
+			}
 		console.debug("getListedFileValues is returning: ",fileLines);
 		return fileLines;
 	}
 	
 	async getListedFileValuesByPath(path){
+		// Do not set this to remove line breaks & do not sort it. At the moment,
+		// this is mostly used for config files, where the position of every line matters.
 		console.debug("getListedFileValuesByPath(" + path + ") was called.");
 		// returns the values in the specified flie; requires file with a key:: value\nkey::value format
 		if (path == null) { throw new Error("No path provided to target file! src: getListedFileValuesByPath"); }
@@ -587,6 +651,12 @@
 		while (i < fileLines.length){fileLines[i] = await this.getValueFromString(fileLines[i]); i++;}
 		console.debug("getListedFileValuesByPath is returning: ",fileLines);
 		return fileLines;
+	}
+	
+	async getKeysFromFileDV(fileDV){
+		// we should be able to do this with non-listed files somehow...
+		// UNFINISHED
+		const dv = DataviewAPI;
 	}
 	
 	async getConfigFilePath(whichAuthor,whichConfig){
@@ -613,7 +683,7 @@
 
 	async getConfigFileValues(whichAuthor,whichConfig) {
 		console.debug("getConfigFileValues(" + whichAuthor + "," + whichConfig + ") was called.");
-		// returns an array of keys from the specified config file
+		// returns an array of values from the specified config file
 		if (whichAuthor == null) { throw new Error("No config author provided! src: getConfigFileValues"); }
 		if (whichConfig == null) { throw new Error("No config file specified! src: getConfigFileValues"); }
 		var configPath = await this.getConfigFilePath(whichAuthor,whichConfig);
@@ -672,6 +742,7 @@
 		return configLines;
 	}
 	
+	
 	// Building Metadata //
 	
 	async getNextIDAsYAML(cat){
@@ -693,9 +764,20 @@
 		var defaultID = await this.getIdentifier();
 		var idString = await this.concatYAML(defaultID, nextID);
 		var idNumString = await this.concatYAML("idnum", nextIDNum);
+		var idLines = await this.concatNewline([idString,idNumString]);
+		return idLines;
+	}
+	
+	async getYAMLHeaderWithNextID(cat){
+		var nextID = await this.getNextIDInCat(cat);
+		var nextIDNum = await this.getNextIDNumInCat(cat);
+		var defaultID = await this.getIdentifier();
+		var idString = await this.concatYAML(defaultID, nextID);
+		var idNumString = await this.concatYAML("idnum", nextIDNum);
 		var idLines = await this.concatNewlineYAML([idString,idNumString]);
 		return idLines;
 	}
+	
 	
 
 }
