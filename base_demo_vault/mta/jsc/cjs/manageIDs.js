@@ -230,12 +230,13 @@
 		// UNFINISHED
 	}
 	
-	// Accessing Files in Bulk // 
-	
-	async getValueFromStringDV(){
-		// we should be able to do fileDV.values or fileDV.values[0]
-		// UNFINISHED
+	async getAllCatsDV(){
+		
 	}
+	
+	
+	
+	// Accessing Files in Bulk // 
 	
 	async getFilesInCatDV(cat) {
 		console.debug("getFilesInCatDV(" + cat + ") was called.");
@@ -275,7 +276,13 @@
 		if (cat == null) { throw new Error("No category was provided to get files from! src: getIDNumsInCatDV"); }
 		var fileListDV = await this.getFilesInCatDV(cat);
 		var idList = new Array();
-		var i=0; while (i<fileListDV.length){idList[i] = await fileListDV[i].idnum; i++}
+		var i=0; while (i<fileListDV.length){
+			var thisIDNum = await fileListDV[i].idnum;
+			if (thisIDNum != null && Number.isInteger(thisIDNum)){
+				idList.push(thisIDNum);
+			} 
+			i++;
+		}
 		console.debug("getIDNumsInCatDV is returning: ",idList);
 		return idList;
 	}
@@ -316,7 +323,9 @@
 		var minimumID = await this.getStartingID();
 		var idList = await this.getIDNumsInCatDV(cat);
 		var idList = await idList.sort();
+		console.log("SEE ME: ", idList);
 		var lastID = idList[idList.length - 1];
+		console.log("SEE ME: ", lastID);
 		var nextID = +lastID + 1;
 		console.debug("getNextIDNumInCat is returning: ",nextID);
 		return nextID;
@@ -411,6 +420,128 @@
 		console.debug("getValueFromString is returning: ",value);
 		return value;
 	}
+	
+	async getValueFromStringDV(targetString){
+		// we should be able to do fileDV.values or fileDV.values[0]
+		// UNFINISHED
+	}
+	
+	wrapStringWithSpacers(targetString){
+		targetString = "\n" + targetString + "\n";
+		return targetString;
+	}
+	
+	wrapStringWithYAMLHeader(targetString){
+		targetString = "---\n" + targetString + "\n---";
+		return targetString;
+	}
+	
+	wrapStringWithComment(targetString){
+		targetString = "%%\n" + targetString + "\n%%";
+		return targetString;
+	}
+	
+	wrapStringWithCommentSpacers(targetString){
+		targetString = "%%\n\n" + targetString + "\n\n%%";
+		return targetString;
+	}
+	
+	wrapStringWithCommentInline(targetString){
+		targetString = "%%" + targetString + "%%";
+		return targetString;
+	}
+	
+	wrapStringWithCommentInlineSpaces(targetString){
+		targetString = "%% " + targetString + " %%";
+		return targetString;
+	}
+	
+	wrapStringWithHTMLComment(targetString){
+		targetString = "<--\n" + targetString + "\n-->";
+		return targetString;
+	}
+	
+	wrapStringWithHTMLCommentSpacers(targetString){
+		targetString = "<--\n\n" + targetString + "\n\n-->";
+		return targetString;
+	}
+	
+	wrapStringWithHTMLCommentInline(targetString){
+		targetString = "<--" + targetString + "-->";
+		return targetString;
+	}
+	
+	wrapStringWithHTMLCommentInlineSpaces(targetString){
+		targetString = "<-- " + targetString + " -->";
+		return targetString;
+	}
+	
+	wrapStringWithTickCommentBlock(targetString,codeName){
+		if (codeName == null) {codeName = "";}
+		targetString = "```" + codeName + "\n" + targetString + "\n```";
+		return targetString;
+	}
+	
+	wrapStringWithTickCommentBlockSpacers(targetString,codeName){
+		if (codeName == null) {codeName = "";}
+		targetString = "```" + codeName + "\n\n" + targetString + "\n\n```";
+		return targetString;
+	}
+	
+	wrapStringWithTickCommentInline(targetString){
+		targetString = "`" + targetString + "`";
+		return targetString;
+	}
+	
+	wrapStringWithTickCommentInlineDV(targetString){
+		targetString = "`=" + targetString + "`";
+		return targetString;
+	}
+	
+	wrapStringWithDataviewBlock(targetString){
+		var resultString = this.wrapStringWithTickCommentBlock(targetString,"dataview");
+		return resultString;
+	}
+	
+	wrapStringWithDataviewBlockSpacers(targetString){
+		var resultString = this.wrapStringWithTickCommentBlockSpacers(targetString,"dataview");
+		return resultString;
+	}
+	
+	wrapStringWithInlineDVQuery(targetString){
+		targetString = "`=this." + targetString + "`";
+		return targetString;
+	}
+	
+	wrapStringWithInlineDVJS(targetString){
+		targetString = "`?=" + targetString + "`";
+		return targetString;
+	}
+	
+	concatYAML(givenKey, givenValue){
+		var resultString = givenKey + ": " + givenValue;
+		return resultString;
+	}
+	
+	concatNewline(givenStringArray){
+		var resultString = "";
+		var i=0; while (i<givenStringArray.length) {
+			if (i == givenStringArray.length - 1){
+				resultString = resultString + givenStringArray[i];
+			} else {
+				resultString = resultString + givenStringArray[i] + "\n";
+			}
+			i++;
+		}
+		return resultString;
+	}
+	
+	async concatNewlineYAML(givenStringArray){
+		var targetString = await this.concatNewline(givenStringArray);
+		var resultString = await this.wrapStringWithYAMLHeader(targetString);
+		return resultString;
+	}
+	
 	
 	// Accessing Keys & Values in Bulk // 
 	
@@ -540,81 +671,31 @@
 		console.debug("getHolBaseConfigValues is returning: ",configLines);
 		return configLines;
 	}
-
-
 	
-	//// OLD CODE BELOW, NEEDS REFACTORING OR REMOVAL ////
-		
-	async getCatList() {
-		// returns array of lines from the categories file
-		var path = "mta/val/category_list.md";
-		var catListLines = await this.getFileLines(path);
-		console.debug("getCatList is returning: ",catLinesList);
-		return catListLines;
+	// Building Metadata //
+	
+	async getNextIDAsYAML(cat){
+		var nextID = await this.getNextIDInCat(cat);
+		var defaultID = await this.getIdentifier();
+		var idString = await this.concatYAML(defaultID, nextID);
+		return idString;
 	}
 	
+	async getNextIDNumAsYAML(cat){
+		var nextIDNum = await this.getNextIDNumInCat(cat);
+		var idString = await this.concatYAML("idnum", nextIDNum);
+		return idString;
+	}
 	
-	
-	
-	// async getHolConfigValue(keyToFind, holConfig) {
-		// returns the string value of a particular item in the config
-		// if (!typeof keyToFind === "string" || !keyToFind instanceof String) {
-			// throw new Error("Key provided is not a string!");
-		// }
-		// holConfig = holConfig || await this.getHolConfig();
-		// keyToFind = keyToFind + "::";
-		// var holConfigLine = holConfig.filter(s => s.includes(keyToFind))[0];
-		// var holConfigValue = holConfigLine.split(' ')[1];
-		// return holConfigValue;
-	// }
-	
-		
-	/* 
-	async getNextID(cat, fileList) {
-		// return the string next ID of the given category
-		// if the starting ID is returned, there were no files of this cat found in the file list
-
-        if (cat == null || !typeof cat === "string" || !cat instanceof String) {
-			throw new Error ("No category was provided!");
-		}
-		
-		// this will get a list of all files if the file list was not provided
-		fileList = fileList || app.vault.getMarkdownFiles();
-		
-		// preparing variables
-		cat = cat.toLowerCase();
-		var holConfig = await this.getHolConfig();
-		var nextID = await this.getStartingID(holConfig);
-		var catLength = await this.getCatLength(holConfig);
-		var fileCatIDList = new Array();
-		
-		if (cat.length != catLength) { throw new Error("Category is not correct length!"); }
-				
-		// this will make a new array of the names of files in this cat
-		if (fileList.length > 0) {
-			var pHolder = 0; 
-			var thisFileName = "";
-			while (pHolder < fileList.length - 1){ 
-				// we check if this file is of the same category and is numbered after the category
-				thisFileName = fileList[pHolder].basename;
-				if (thisFileName.substring(0,catLength).toLowerCase() == cat && !isNaN(thisFileName.split(" ")[0].substring(catLength))) 
-					{
-						fileCatIDList.push(thisFileName.split(" ")[0] || thisFileName);
-					}
-				pHolder = pHolder += 1;
-			} 
-		if (fileCatIDList.length > 0 ) {
-			// we will now sort the list alphabetically so the last ID is at the end
-			fileCatIDList.sort();
-			// we wil now extract the number from the ID
-			nextID = fileCatIDList[fileCatIDList.length - 1].substring(catLength);
-			nextID = +nextID + 1;
-			}
-		}
-		
-		return nextID;
-    } */
-	
+	async getNextIDAndNumAsYAML(cat){
+		var nextID = await this.getNextIDInCat(cat);
+		var nextIDNum = await this.getNextIDNumInCat(cat);
+		var defaultID = await this.getIdentifier();
+		var idString = await this.concatYAML(defaultID, nextID);
+		var idNumString = await this.concatYAML("idnum", nextIDNum);
+		var idLines = await this.concatNewlineYAML([idString,idNumString]);
+		return idLines;
+	}
 	
 
 }
