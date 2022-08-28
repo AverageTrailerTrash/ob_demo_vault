@@ -2,7 +2,8 @@ This vault will include just the base logic needed for managing a category-id sy
 
 ## Coming Next
 * ~~fixing the incorrect folder structure & naming conventions~~ ✓
-* reconfiguring functions to use dataview API to improve performance & enable blind IDs.
+* ~~reconfiguring functions to use dataview API to improve performance & enable blind IDs.~~ ✓
+* reconfiguring things again to take *full* advantage of dv... I want to minimize file manipulation for efficiency and ensure files can be found regardless of folder structure.
 
 ## Coming Soon 
 These need to be converted from my personal vault into a more standard format.
