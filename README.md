@@ -1,7 +1,7 @@
 # ob_demo_vault
 This will contain an (?) Obsidian vault that demonstrates a more extensible version of my category & automation system. I started this version because the way I initially implemented it in my personal vault (via pure Templater) is very ineffcient when I need to add new categories, metadata keys/values, templates, features... or extend similar systems to additional vaults. And I think others will benefit from the results once it's fleshed out.
 
-(This git may also include some secondary applets to manage local files and further enhance Obsidian, plus documentation and general tips about organization, notetaking, etc.)
+(This repo may also include some secondary applets to manage local files and further enhance Obsidian, plus documentation and general tips about organization, notetaking, etc.)
 
 Note that this version of the system is in the very early stages; if you're peeking in before any proper releases, expect things to break.
 
