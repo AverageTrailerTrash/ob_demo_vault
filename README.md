@@ -1,13 +1,17 @@
 # ob_demo_vault
-This will contain an Obsidian vault that demonstrates the category &amp; automation systems I'm already using and continuing to develop. It may also include some secondary applets I use to manage my file system and further enhance Obsidian, plus general tips and documentation.
+This will contain an (?) Obsidian vault that demonstrates a more extensible version of my category & automation system. I started this version because the way I initially implemented it in my personal vault (via pure Templater) is very ineffcient when I need to add new categories, metadata keys/values, templates, features... or extend similar systems to additional vaults. And I think others will benefit from the results once it's fleshed out.
 
-It's in the very early stages; if you're peeking in before any proper releases, expect things to break.
+(This git may also include some secondary applets to manage local files and further enhance Obsidian, plus documentation and general tips about organization, notetaking, etc.)
+
+Note that this version of the system is in the very early stages; if you're peeking in before any proper releases, expect things to break.
 
 ## Status: 
 
 * Does **not** have all the base scripts and templates needed for new users to get started. 
 
 * Currently working on rebuilding the scripts to use the Dataview API for greater efficiency.
+
+* [See more.](https://github.com/AverageTrailerTrash/ob_demo_vault/tree/main/base_demo_vault#readme)
 
 ## Primary Use
 
@@ -19,32 +23,31 @@ It's based on the following principles:
 * **Interopability**: Programs should be able to interact with each other & the broader system.
 * **Flexibility**: Our notes and systems shouldn't be locked into someone else's templates.
 * **Automatism**: We should be able to work on our projects in a comfortable flow state.
-* **Efficiency**: We should minimize repetitive busy work we find unpleasant or distracting.
+* **Simplicity**: The systems we use should be plain, logical, and easy to build onto.
 
 ## Contents
 * **base_demo_vault**: This will include just the base scripts, folders, etc. needed to implement the category-ID system, including tools to convert existing vaults.
 * **main_demo_vault**: This will include additional systems that balance out the structure of the category-ID system with tools for more freeform note creation.
-* **life_demo_vault**: This will include many additional systems that I think would be useful for the average individual to handle their daily life and activities.
 * **individual_packages**: This will include each system from the other vaults & more as separate add-ons that can be installed to any vault based on this struture. 
-* **java_applet**: This will include a small program for desktop users that helps Obsidian vaults based on this structure communicate with the rest of your computer.
+* **applets**: This will include small programs for desktop users to help vaults based on this structure communicate with each other and the rest of your computer.
 
-[Documentation can now be found at the wiki.](https://github.com/AverageTrailerTrash/ob_demo_vault/wiki)
+[Documentation can now be found at the wiki.](https://github.com/AverageTrailerTrash/ob_demo_vault/wiki) Note that it is incomplete. The code is still in a highly volatile state with frequent refactorings etc. as we find a base system that's logically sound and efficient enough to build features overtop of.
 
-I recommend starting with the main vault and adding packages over time. 
-
-Jumping into a whole new homekeeping & productivity system at once can be overwhelming.
+My intention is for new users to start with the main vault to give Obsidian some structure, then add only packages that suit them over time, so as to extend its capabilities without having to reinvent the wheel. Eventually, I hope others will share their own add-ons that solve problems they faced as well.
 
 ## Required Plugins
-This list will be added to over time as I flesh out the system.
-* **Templater**: allows us to run js from templates
-* **CustomJS**: allows us to break js into reusable functions
-* **Dataview**: more advanced queries, api gives easy access to metadata
-* **Metadata Menu**: allows us to change metadata value and suggest entries
-* **Advanced URI**: link notes from external tools & run commands from links
+This list will change over time as I flesh out the system.
+* **Templater**: allows us to run js from templates. This lets us embed javascript functions within and as custom templates.
+* **CustomJS**: allows us to break js into reusable functions in multiple files. This keeps me sane & the code flexible, extensible...
+* **Dataview**: more advanced queries, api gives easy access to metadata. The makes the code run much faster than accessing files every time.
+* **Metadata Menu**: allows us to edit metadata values efficiently & suggest entries. You won't have to remember every value for consistency.
+* **Advanced URI**: link notes from external tools & run commands from links. This simplifies cross-vault and cross-program workflows. 
  
 **Core Plugins**: File Explorer, Quick Switcher, Search, Templates
 
 ## Recommended Plugins
+* **Workspaces Plus**: allows us to save and load workspaces as commands
+* **Commander**: allows us to install commands as icons in any sidebar
 * **Recent Files**: quickly access recent files from sidebar
 * **Various Complements**: IDE-style autofill / text suggestions
 * **Advanced Tables**: painless markdown table creation
