@@ -37,7 +37,6 @@ My intention is for new users to start with the main vault to give Obsidian some
 
 ## Required Plugins
 This list will change over time as I flesh out the system.
-* **Templater**: allows us to run js from templates. This lets us embed javascript functions within and as custom templates.
 * **CustomJS**: allows us to break js into reusable functions in multiple files. This keeps me sane & the code flexible, extensible...
 * **Dataview**: more advanced queries, api gives easy access to metadata. The makes the code run much faster than accessing files every time.
 * **Metadata Menu**: allows us to edit metadata values efficiently & suggest entries. You won't have to remember every value for consistency.
@@ -46,6 +45,7 @@ This list will change over time as I flesh out the system.
 **Core Plugins**: File Explorer, Quick Switcher, Search, Templates
 
 ## Recommended Plugins
+* **Templater**: allows us to run js from templates. This lets us embed javascript functions within and as custom templates.
 * **Workspaces Plus**: allows us to save and load workspaces as commands
 * **Commander**: allows us to install commands as icons in any sidebar
 * **Recent Files**: quickly access recent files from sidebar
