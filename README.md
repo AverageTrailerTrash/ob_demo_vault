@@ -45,7 +45,7 @@ This list will change over time as I flesh out the system.
 **Core Plugins**: File Explorer, Quick Switcher, Search, Templates
 
 ## Recommended Plugins
-* **Templater**: allows us to run js from templates. This lets us embed javascript functions within and as custom templates.
+* **Templater**: assign templates to folders, insert text w/ js more easily
 * **Workspaces Plus**: allows us to save and load workspaces as commands
 * **Commander**: allows us to install commands as icons in any sidebar
 * **Recent Files**: quickly access recent files from sidebar
