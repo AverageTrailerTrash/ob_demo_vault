@@ -2,44 +2,63 @@
 	//  this class implements the core functionality and structure of my vault
 	
 	// function structure:
-	// // vital notices, debug, description, dependencies, errors, vars, behavior, debug, return
+	// // vital notices, debug, description, dependencies, errors, vars, behavior, debug, return.
+	
+	// function naming convention:
+	// // any function that relies on another plugin's API should have its initials as its suffix:
+	// // // DV = Dataview, MM = Metadata Menu
+	// // that's only required if the function name doesn't already mention the API in another way.
+	
+	// variable naming convention:
+	// // likewise, any var with a unique value type derived from a plugin API should have its initials,
+	// // to help minimize confused actions -- like accidentally trying to "read" a dataview file lol.
 	
 	// using console:
 	// // console.debug for code logic, console.info for user-driven activities,
-	// // console.log for notes, console.warn for possible issues (not throwable)
+	// // console.log for notes, console.warn for possible issues (not throwable).
+	
+	// // // // // TO DO:::: ability to get next id, find settings files by tags, 
+	// // // // //           implement oop conventions, re-implement file parsing.
 	
 	abcTest(){
 		// my function!
 		return "abc";
-	}
+	} 
 	
-	// Global Variables //
 	
-	getBaseStructure(key){
-		console.debug("getBaseStructure(" + key + ") was called.");
-		// returns the requested global value; these are vital to operation
+	//////////////////////// GETTING STUFF ///////////////////////////
+	
+	// Static Variables //
+	
+	getDefaultPathBase(key){
+		// returns the requested static path value of base folder; these are vital to operation
 		var keyValue = "";
 		switch(key){
-			case "utilities_folder": keyValue = "mta"; break;
-			case "javascript_folder": keyValue = "mta/jsc"; break;
-			case "customJS_folder": keyValue = "mta/jsc/cjs"; break;
-			case "rawdata_folder": keyValue = "mta/val"; break;
-			case "template_folder": keyValue = "mta/tpl"; break;
-			case "temporary_folder": keyValue = "mta/tmp"; break;
-			case "cat_list_file": keyValue = "category_list.md"; break;
-			default: throw new Error("Incorrect key provided for base structure! src: getBaseStructure"); break;
+			case "utilities": keyValue = "utilities"; break;
+			case "javascript": keyValue = "utilities/javascript"; break;
+			case "customJS": keyValue = "utilities/javascript/customjs"; break;
+			case "settings": keyValue = "utilities/settings"; break;
+			case "categories_settings": keyValue = "utilities/settings/categories"; break;
+			case "templates": keyValue = "utilities/templates"; break;
+			case "temporary": keyValue = "utilities/temporary"; break;
+			case "indexes": keyValue = "utilities/indexes"; break;
+			case "categories_indexes": keyValue = "utilities/indexes/categories"; break;
+			case "data": keyValue = "utilities/data"; break;
+			case "classes": keyValue = "utilities/data/classes"; break;
+			case "cabinet": keyValue = "cabinet"; break;
+			case "categories_templates": keyValue = "utilities/templates/categories"; break;
+			default: throw new Error("Incorrect key provided for retrieving base structure defaults! src: getDefaultPathBase"); break;
 		}
-		console.debug("getBaseStructure is returning: ",keyValue);
+		console.debug("getDefaultPathBase is returning: ",keyValue);
 		return keyValue;
 	}
 	
-	// Accessing Metadata //
-		
+	// Accessing Dataview Files //
+	
 	async getDataviewFile(path){
+		// This is probably the MOST EFFICIENT option, please use it if you know the full path.
 		console.debug("getDataviewFile(" + path + ") was called.");
-		// returns dataview version of a file. 
-		// this is necessary to efficiently pull metadata from files.
-		// path can be actual path or file name.
+		// This returns the dataview version of a file using its path or file name.
 		const dv = DataviewAPI;
 		if (path == null) { throw new Error("No path or name provided! src: getDataviewFile"); }
 		var dvFile = await dv.page(path);
@@ -48,736 +67,523 @@
 		return dvFile;
 	}
 	
-	getMetadataValue(targetFileDV,key){
-		console.debug("getMetadataValue(",targetFileDV,"," + key + ") was called.");
-		// this returns the vaue of a given metadata entry from a given dataview file
-		if (targetFileDV == null) { throw new Error("No dataview file provided to get metadata value from! src: getMetadataValue"); }
-		if (key == null) { throw new Error("No key provided to retrieve metadata value from! src: getMetadataValue"); }
+	async getDataviewPages(source){
+		const dv = DataviewAPI;
+		console.log("getDataviewPages(" + source + ") was called.");
+		// This functions returns dataview pages for further querying. Source (FROM) is optional but increase efficiency.
+		// Non-tag source strings will be wrapped in quotes, none of that is needed on the end of other functions.
+		if (source == null) { 
+			console.warn("No source was provided to locate dataview-type file! The search may be slower as a result. src: getDataviewPages");
+			source = "";
+		} else {
+			if (source.charAt(0) != "#") {
+				source = this.wrapStringInQuotesDV(source);
+			}
+		}
+		var dvFiles = await dv.pages(source);
+		console.debug("getDataviewPages is returning: ",dvFiles);
+		return dvFiles;
+	}
+	
+	async getDataviewFileByID(identifier, source){
+		// source is OPTIONAL but makes function MORE EFFICIENT
+		// NOTE: string will be wrapped in quotes by getDataviewPages!
+		// RETURNS A SINGLE FILE, THE FIRST MATCH -- IDS SHOULD BE UNIQUE.
+		console.log("getDataviewFileByID(" + identifier + "," + source + ") was called.");
+		// This function gets the dataview version of a file associated with an ID and folder path (OR OTHER "FROM" QUERY)
+		const dv = DataviewAPI;
+		if (identifier == null) { throw new Error("No ID was provided to locate dataview-type file! src: getDataviewFileByID");}
+		if (source == null) { 
+			console.warn("No source was provided to locate dataview-type file! The search may be slower as a result. src: getDataviewFileByID");
+			source = "";
+		}
+		var dvFiles = await this.getDataviewPages(source);
+		var dvFile = await dvFiles.where(f => f.id == identifier)[0];
+		if (dvFile == null) { throw new Error("Failed to retrieve dataview-type file! Source or ID may be invalid. src: getDataviewFileByID"); }
+		console.debug("getDataviewFileByID is returning: ",dvFile);
+		return dvFile; 
+	}  
+	
+	async getDataviewFileKeys2D(targetFileDV){
+		console.debug("getDataviewFileKeys2D(", targetFileDV, ") was called.");
+		// this returns only the frontmatter keys of the file as a 2D array, allowing you to check the number of them etc.
+		// this is helpful when you're trying to get multiple keys at once and don't want to keep querying the file
+		if (targetFileDV == null) { throw new Error("No dataview file provided to get the frontmatter keys from! src: getDataviewFileKeys2D"); }
+		var frontmatterKeys = await targetFileDV.file.frontmatter;
+		console.log("here's the frontmatter ", frontmatterKeys);
+		var dvFileKeys = await Object.entries(frontmatterKeys);
+		if (dvFileKeys == null) { throw new Error("Failed to retrieve keys of dataview-type file! src: getDataviewFileKeys2D"); }
+		console.debug("getDataviewFileKeys2D is returning: ",dvFileKeys);
+		return dvFileKeys;
+	}
+	
+	async getDataviewFileKeys1D(targetFileDV){
+		console.debug("getDataviewFileKeys1D(", targetFileDV, ") was called.");
+		// this returns only the frontmatter keys of the file as a 1D array, allowing you to check the number of them etc.
+		// this is helpful when you're trying to get multiple keys at once and don't want to keep querying the file
+		if (targetFileDV == null) { throw new Error("No dataview file provided to get the frontmatter keys from! src: getDataviewFileKeys1D"); }
+		var dvFileKeys = await getDataviewFileKeys2D.flat();
+		if (dvFileKeys == null) { throw new Error("Failed to retrieve keys of dataview-type file! src: getDataviewFileKeys1D"); }
+		console.debug("getDataviewFileKeys1D is returning: ",dvFileKeys);
+		return dvFileKeys;
+	}
+	
+	
+	// Accessing Attributes //
+	
+	getMetadataValueDV(targetFileDV,key){
+		// this will return as a dataview array ONLY IF THE KEY CONTAINS MORE THAN ONE VALUE -- otherwise it returns a string. So you need to check the type with Array.isArray(whatever this function returns) before using it.
+		console.debug("getMetadataValueDV(",targetFileDV,"," + key + ") was called.");
+		// this returns ALL values of a given metadata entry from a given dataview file
+		if (targetFileDV == null) { throw new Error("No dataview file provided to get metadata value from! src: getMetadataValueDV"); }
+		if (key == null) { throw new Error("No key provided to retrieve metadata value from! src: getMetadataValueDV"); }
 		// note: below is equivalent to var metadataValue = targetFile.key, except key can be var here.
-		var metadataValue = targetFileDV[key];
-		if (metadataValue == null) { console.warn("Failed to retrieve metadata value! File may be incorrect or file may not have this metadata item. src: getMetadataValue"); }
-		console.debug("getMetadataValue is returning: ",metadataValue);
+		var metadataValueDV = targetFileDV[key];
+		if (metadataValueDV == null) { console.warn("Failed to retrieve metadata value! File may be incorrect or file may not have this metadata item. src: getMetadataValueDV"); }
+		console.debug("getMetadataValueDV is returning: ",metadataValueDV);
+		return metadataValueDV;
+	}
+	
+	async getFirstMetadataValueDV(targetFileDV,key){
+		console.debug("getFirstMetadataValueDV(",targetFileDV,"," + key + ") was called.");
+		// this returns the FIRST value of a given metadata entry from a given dataview file AS A STRING
+		if (targetFileDV == null) { throw new Error("No dataview file provided to get metadata value from! src: getFirstMetadataValueDV"); }
+		if (key == null) { throw new Error("No key provided to retrieve metadata value from! src: getFirstMetadataValueDV"); }
+		var metadataValueDV = await this.getMetadataValueDV(targetFileDV, key);
+		if (metadataValueDV == null) { console.warn("Failed to retrieve metadata value! File may be incorrect or file may not have this metadata item. src: getFirstMetadataValueDV"); }
+		if (Array.isArray(metadataValueDV)){
+			var metadataValue = metadataValueDV[0];
+		} else {
+			var metadataValue = metadataValueDV;
+		}
+		
+		console.debug("getFirstMetadataValueDV is returning: ",metadataValue);
 		return metadataValue;
 	}
-
-	async getMetadataValueFromPath(path,key){
-		console.debug("getMetadataValueFromPath(" + path + "," + key + ") was called.");
-		// this returns the vaue of a given metadata entry from a given file by its path
-		// either path or file name can be used here
-		if (path == null) { throw new Error("No file path or name provided to get metadata value from! src: getMetadataValue"); }
-		if (key == null) { throw new Error("No key provided to retrieve metadata value from! src: getMetadataValue"); }
-		var targetFile = await this.getDataviewFile(path);
-		// note: below is equivalent to var metadataValue = targetFile.key, except key can be var here.
-		var metadataValue = targetFile[key];
-		if (metadataValue == null) { console.warn("Failed to retrieve metadata value! Path may be incorrect, file missing, or the file may not have this metadata item. src: getMetadataValueFromPath"); }
-		console.debug("getMetadataValueFromPath is returning: ",metadataValue);
-		return metadataValue;
+	
+	getKeyValFromArray(givenArray, givenKey){
+		// array must be in format [key, value, key, value] OR a multi-dimensional format that flattens to it.
+		console.debug("getKeyValFromArray(" + givenArray + ", " + givenKey + ") was called.");
+		// returns the key's value(s) AS AN ARRAY, must use [0] to get single value
+		if (givenArray == null) { throw new Error("No array was provided to pull values from! src: getKeyValFromArrayDV"); }
+		if (givenKey == null) { throw new Error("No key was provided to get the value of! src: getKeyValFromArrayDV"); }
+		givenArray = givenArray.flat();
+		var outputArray = new Array();
+		var i=0; while (i<givenArray.length){
+			if (givenArray[i].toLowerCase() == givenKey.toLowerCase()){
+				outputArray.push(givenArray[i+1]);
+			}
+			i = i + 2;
+		}
+		if (outputArray.length == 0) {
+			outputArray = null;
+			console.warn("The given key was not found in this array! Key may be incorrect or array may be misconfigured. src: getKeyValFromArrayDV"); 
+		}
+		console.debug("getKeyValFromArray is returning: ",outputArray);
+		return outputArray;
 	}
 	
-	// // accessing config-related metadata // //
+		
+	// Accessing Setting Files // 
 	
-	async getConfigFileDV(whichAuthor, whichConfig) {
-		console.debug("getConfigFileDV(" + whichAuthor + "," + whichConfig + ") was called.");
-		// returns dataview version of the specificed config file. 
-		// this is necessary to get the values efficiently when in metadata format.
-		// path format will be config_whichAuthor_whichConfig.md
-		if (whichAuthor == null) { throw new Error("No config author provided! src: getConfigFileDV"); }
-		if (whichConfig == null) { throw new Error("No config file specified! src: getConfigFileDV"); }
-		var path = await this.getConfigFilePath(whichAuthor,whichConfig);
-		var thisConfigFile = await this.getDataviewFile(path);
-		console.debug("getConfigFileDV is returning: ",thisConfigFile);
-		return thisConfigFile;
+	concatSettingsID(whichAuthor,whichConfig){
+		console.debug("concatSettingsID(" + whichAuthor + ", " + whichConfig + ") was called.");
+		if (whichAuthor == null) { throw new Error("No settings author provided! src: concatSettingsID"); }
+		if (whichConfig == null) { throw new Error("No settings file specified! src: concatSettingsID"); }
+		var settingsID = "settings_" + whichAuthor + "_" + whichConfig;
+		console.debug("concatSettingsID is returning: ",settingsID);
+		return settingsID;
 	}
 	
-	async getConfigValue(whichAuthor, whichConfig, key) {
-		console.debug("getConfigValue(" + whichAuthor + "," + whichConfig + "," + key + ") was called.");
-		// returns the value of a particular config value from a particular file
-		if (whichAuthor == null) { throw new Error("No config author provided! src: getConfigValue"); }
-		if (whichConfig == null) { throw new Error("No config file specified! src: getConfigValue"); }
-		if (key == null) { throw new Error("No key provided to get config value from! src: getConfigValue"); }
-		var thisConfigFile = this.getConfigFileDV(whichAuthor,whichConfig);
-		var keyValue = thisConfigFile[key];
-		console.debug("getConfigFileDV is returning: ",keyValue);
-		return keyValue;
+	async getCatListSettingsFileDV() {
+		console.debug("getCatListSettingsFileDV() was called.");
+		var catListFileDV = await this.getSettingsHolFileDV("categories");
+		console.debug("getCatListSettingsFileDV is returning: ",catListFileDV);
+		return catListFileDV;
 	}
 	
-	//  //  convenience functions for accessing common config metadata values // //
-	
-	async getHolConfigFileDV(whichConfig) {
-		console.debug("getHolConfigFileDV(" + whichConfig + ") was called.");
-		// returns dataview version of the specified config file by author hol (me)
-		if (whichConfig == null) { throw new Error("No config file specified! src: getHolConfigFileDV"); }
-		var thisConfigFile = await this.getConfigFileDV("hol", whichConfig);
-		console.debug("getHolConfigFileDV is returning: ",thisConfigFile);
-		return thisConfigFile;
+	async getCatListDV(){
+		console.debug("getCatListDV() was called.");
+		// this returns a dataview array of the current categories in the vault
+		var catFileDV = await this.getCatListSettingsFileDV();
+		if (catFileDV == null || catFileDV == "") { throw new Error("Failed to retrieve 'categories' setting file! File may have been deleted or had its ID changed. src: getCatListDV"); }
+		var catListDV = await this.getMetadataValueDV(catFileDV,"category");
+		if (catListDV == null) { console.warn("No categories were found! 'Categories' setting file may be misconfigured. src: getCatListDV"); }
+		console.debug("getCatListDV is returning: ",catListDV);
+		return catListDV;
 	}
 	
-	async getHolBaseConfigFileDV() {
-		console.debug("getHolConfigFileDV() was called.");
-		// returns dataview version of the base config file by author hol (me)
-		var thisConfigFile = await this.getHolConfigFileDV("base");
-		console.debug("getHolBaseConfigFileDV is returning: ",thisConfigFile);
-		return thisConfigFile;
+	async getCatSettingsFileDV(cat){
+		console.debug("getCatSettingsFileDV(" + cat + ")" + " was called.");
+		// this returns a dataview type file containing the settings for the given category
+		if (cat == null) { throw new Error("No category was provided! src: getCatSettingsFileDV"); }
+		var catSettingID = await this.concatCatSettingsID(cat);
+		var catSettingsFolderPath = this.getDefaultPathBase("categories_settings");
+		var catFile = await this.getDataviewFileByID(catSettingID,catSettingsFolderPath);
+		console.debug("getCatSettingsFileDV is returning: ",catFile);
+		return catFile;
 	}
 	
-	async getHolBaseConfigValue(key) {
-		console.debug("getHolBaseConfigValue(" + key + ") was called.");
-		// returns a metadata value from config_hol_base
-		if (key == null) { throw new Error("No key provided to retrieve metadata value from! src: getHolBase"); }
-		var configFile = await this.getHolBaseConfigFileDV();
-		var configValue = await this.getMetadataValue(configFile,key);
-		console.debug("getHolBaseConfigValue is returning: ",configValue);
-		return configValue; 
+	concatCatSettingsID(cat){
+		console.debug("concatCatSettingsID(" + cat + ")" + " was called.");
+		// this returns the correct naming convention for the given category setting file's ID
+		// it exists as its own function for ease of future refactoring
+		if (cat == null) { throw new Error("No category was provided! src: concatCatSettingsID"); }
+		var catSettings = cat + "_settings";
+		console.debug("concatCatSettingsID is returning: ",catSettings);
+		return catSettings;
+	}
+	
+	concatCatSettingsName(cat){
+		console.debug("concatCatSettingsID(" + cat + ")" + " was called.");
+		// this returns the correct naming convention for the given category setting file's name
+		// it exists as its own function for ease of future refactoring
+		if (cat == null) { throw new Error("No category was provided! src: concatCatSettingsName"); }
+		var catSettings = cat + "_settings";
+		console.debug("concatCatSettingsName is returning: ",catSettings);
+		return catSettings;
+	}
+	
+	concatCatSettingsTag(cat){
+		console.debug("concatCatSettingsTag(" + cat + ")" + " was called.");
+		// this returns the correct naming convention for the given category setting file's ID
+		// it exists as its own function for ease of future refactoring
+		if (cat == null) { throw new Error("No category was provided! src: concatCatSettingsTag"); }
+		var catSettingsTag = "settings/category/" + cat;
+		console.debug("concatCatSettingsTag is returning: ",catSettingsTag);
+		return catSettingsTag;
+	}
+	
+	concatCatIndex(cat){
+		console.debug("concatCatIndex(" + cat + ")" + " was called.");
+		// This function exists in casewe want to change the way files are named in the future.
+		// It returns the proper format for the default category index file.
+		if (cat == null) { throw new Error("No category was provided! src: concatCatIndex"); }
+		var catIndex = cat + "_index.md";
+		console.debug("concatCatIndex is returning: ",catIndex);
+		return catIndex;
+	} 
+	
+	concatCatTemplate(cat){
+		console.debug("concatCatTemplate(" + cat + ")" + " was called.");
+		// This function exists in case we want to change the way files are named in the future.
+		// It returns the proper format for the default category template file.
+		if (cat == null) { throw new Error("No category was provided! src: concatCatTemplate"); }
+		var catTemplate = cat + "_template.md";
+		console.debug("concatCatTemplate is returning: ",catTemplate);
+		return catTemplate;
+	}
+	
+		
+	// Accessing Category Information //
+	
+	async doesCatExistDV(cat){
+		console.debug("doesCategoryExistDV(" + cat + ") was called.");
+		// this returns a true or false response based on whether the category is in the list
+		if (cat == null) { throw new Error("No category was provided! src: doesCatExistDV"); }
+		var catListDV = await this.getCatListDV();
+		if (catListDV == null) { console.warn("No categories were found! 'Categories' setting file may be misconfigured. src: doesCatExistDV"); }
+		var catPresence = false;
+		if (catListDV.includes(cat)) {catPresence = true;}
+		console.debug("doesCatExistDV is returning: ",catPresence);
+		return catPresence;
 	}
 		
-	// Getting config_hol_base Values // 
+	async getCatSettingDV(cat,setting){
+		// first underscore after cat is added by the code! do not send!
+		console.debug("getCatSettingDV(" + cat + ", " + setting + ") was called.");
+		// this returns all values of a given setting from the given category, multiple entries will return an array! 
+		if (cat == null) { throw new Error("No category was provided! src: getCatSettingDV"); }
+		if (setting == null) { throw new Error("No setting attribute was provided! src: getCatSettingDV"); }
+		var catFileDV = await this.getCatSettingsFileDV(cat);
+		if (catFileDV == null) { throw new Error("Failed to retrieve the settings file for this category! File may have been deleted or had its ID changed. src: getCatSettingDV"); }
+		var catAttribute = await this.getMetadataValueDV(catFileDV,setting); 
+		if (catAttribute == null) { console.warn("Failed to retrieve category attribute! The setting file for this category may be misconfigured or missing information. src: getCatSettingDV"); }
+		console.debug("getCatSettingDV is returning: ",catAttribute);
+		return catAttribute;
+	}
+		
+	async getFirstCatSettingDV(cat,setting){
+		// first underscore after cat is added by the code! do not send!
+		console.debug("getFirstCatSettingDV(" + cat + ", " + setting + ") was called.");
+		// this returns the first value of a given setting from the given category as a string
+		if (cat == null) { throw new Error("No category was provided! src: getFirstCatSettingDV"); }
+		if (setting == null) { throw new Error("No setting attribute was provided! src: getFirstCatSettingDV"); }
+		var firstAttribute = await this.getCatSettingDV(cat, setting);
+		if (Array.isArray(firstAttribute)){	firstAttribute = firstAttribute[0]; }
+		console.debug("getFirstCatSettingDV is returning: ",firstAttribute);
+		return firstAttribute;
+	}	
 	
-	async getIdentifier() {
-		console.debug("getIdentifier() was called.");
+	
+	// // Accessing Category Information: convenience functions // //
+	
+	async getCatFolderPathDV(cat){
+		console.debug("getCatFolderPathDV(" + cat + ") was called.");
+		// this returns the default path string of the current cat
+		if (cat == null) { throw new Error("No category was provided! src: getCatFolderPathDV"); }
+		var catFolderPath = await this.getFirstCatSettingDV(cat,"s_folder");
+		if (catFolderPath == null) { console.warn("Failed to retrieve category folder path! 'categories' setting file may be misconfigured or missing information. src: getCatFolderPathDV"); }
+		console.debug("getCatFolderPathDV is returning: ",catFolderPath);
+		return catFolderPath;
+	}
+	
+	async getCatNameDV(cat){
+		console.debug("getCatNameDV(" + cat + ") was called.");
+		// this returns the descriptive name string of the given cat
+		if (cat == null) { throw new Error("No category was provided! src: getCatNameDV"); }
+		var catName = await this.getFirstCatSettingDV(cat,"s_name");
+		if (catName == null) { console.warn("Failed to retrieve category name! 'categories' setting file may be misconfigured or missing information. src: getCatNameDV"); }
+		console.debug("getCatNameDV is returning: ",catName);
+		return catName;
+	}
+	
+	async getCatDescriptionDV(cat){
+		console.debug("getCatDescriptionDV(" + cat + ") was called.");
+		// this returns the description string of the given cat
+		if (cat == null) { throw new Error("No category was provided! src: getCatDescriptionDV"); }
+		var catFolderPath = await this.getFirstCatSettingDV(cat,"s_description");
+		if (catFolderPath == null) { console.warn("Failed to retrieve category description! 'categories' setting file may be misconfigured. src: getCatDescriptionDV"); }
+		console.debug("getCatDescriptionDV is returning: ",catFolderPath);
+		return catFolderPath;
+	}
+	
+	async getCatTagDV(cat){
+		console.debug("getCatTagDV(" + cat + ") was called.");
+		// this returns the tag string of the given cat
+		if (cat == null) { throw new Error("No category was provided! src: getCatTagDV"); }
+		var catTag = await this.getFirstCatSettingDV(cat,"s_tag");
+		if (catTag == null) { console.warn("Failed to retrieve category tag! 'categories' setting file may be misconfigured. src: getCatTagDV"); }
+		console.debug("getCatTagDV is returning: ",catTag);
+		return catTag;
+	}
+	
+	async getCatTemplateDV(cat){
+		console.debug("getCatTemplateDV(" + cat + ") was called.");
+		// this returns the template string of the given cat
+		if (cat == null) { throw new Error("No category was provided! src: getCatTemplateDV"); }
+		var catTemplate = await this.getFirstCatSettingDV(cat,"s_template");
+		if (catTemplate == null) { console.warn("Failed to retrieve category template! 'categories' setting file may be misconfigured. src: getCatTemplateDV"); }
+		console.debug("getCatTemplateDV is returning: ",catTemplate);
+		return catTemplate;
+	}
+	
+	async getCatIndexDV(cat){
+		console.debug("getCatIndexDV(" + cat + ") was called.");
+		// this returns the template path string of the given cat
+		if (cat == null) { throw new Error("No category was provided! src: getCatIndexDV"); }
+		var catIndex = await this.getFirstCatSettingDV(cat,"s_index");
+		if (catIndex == null) { console.warn("Failed to retrieve category index! 'categories' setting file may be misconfigured. src: getCatIndexDV"); }
+		console.debug("getCatIndexDV is returning: ",catIndex);
+		return catIndex;
+	}
+	
+	async getCatParentDV(cat){
+		console.debug("getCatParentDV(" + cat + ") was called.");
+		// this returns the template path string of the given cat
+		if (cat == null) { throw new Error("No category was provided! src: getCatParentDV"); }
+		var catParent = await this.getFirstCatSettingDV(cat,"s_parent");
+		if (catParent == null) { console.warn("Failed to retrieve category parent! 'categories' setting file may be misconfigured. src: getCatParentDV"); }
+		console.debug("getCatParentDV is returning: ",catParent);
+		return catParent;
+	}
+	
+	async getCatSettingsAsArrayDV(cat){
+		console.debug("getCatSettingsAsArrayDV(" + cat + ") was called.");
+		// this returns a 2D array of all keys from the given cat's setting file; use .flat() on returned value for 1D
+		if (cat == null) { throw new Error("No category was provided! src: getCatSettingsAsArrayDV"); }
+		var catFileDV = await this.getCatSettingsFileDV(cat);
+		if (catFileDV == null) { throw new Error("Failed to retrieve the settings file for this category! File may have been deleted or had its ID changed. src: getCatSettingsAsArrayDV"); }
+		var catSettingsArray = await this.getDataviewFileKeys2D(catFileDV);
+		console.debug("getCatSettingsAsArrayDV is returning: ",catSettingsArray);
+		return catSettingsArray;
+	}
+	
+	// Accesssing Other Settings Files //
+	
+	async getSettingsFileDV(whichAuthor, whichConfig) {
+		console.debug("getSettingsFileDV(" + whichAuthor + "," + whichConfig + ") was called.");
+		// returns dataview version of the specificed config file. 
+		// this is necessary to get the values efficiently when in metadata format.
+		// source format will be config_whichAuthor_whichConfig
+		if (whichAuthor == null) { throw new Error("No config author provided! src: getSettingsFileDV"); }
+		if (whichConfig == null) { throw new Error("No config file specified! src: getSettingsFileDV"); }
+		var settingsID = await this.concatSettingsID(whichAuthor,whichConfig);
+		var thisConfigFile = await this.getDataviewFileByID(settingsID,"#settings");
+		console.debug("getSettingsFileDV is returning: ",thisConfigFile);
+		return thisConfigFile;
+	}
+	
+	async getSettingsHolFileDV(whichConfig) {
+		console.debug("getSettingsHolFileDV(" + whichConfig + ") was called.");
+		// returns dataview version of the specified config file by author hol (me)
+		if (whichConfig == null) { throw new Error("No settings file specified! src: getSettingsHolFileDV"); }
+		var thisConfigFile = await this.getSettingsFileDV("hol", whichConfig);
+		console.debug("getSettingsHolFileDV is returning: ",thisConfigFile);
+		return thisConfigFile;
+	}
+	
+	// // hol settings convenience functions // //
+	
+	async getSettingsHolDefaultsFileDV() {
+		console.debug("getSettingsHolDefaultsFileDV() was called.");
+		// returns dataview version of the main settings file with the default values
+		var thisConfigFile = await this.getSettingsHolFileDV("defaults");
+		console.debug("getSettingsHolDefaultsFileDV is returning: ",thisConfigFile);
+		return thisConfigFile;
+	}
+	
+	async getIdentifierDV(){
+		console.debug("getIdentifierDV() was called.");
 		//returns the string value of the identifier key as set in the config
-		var defaultID = await this.getHolBaseConfigValue("identifier");
-		console.debug("getIdentifier is returning: ",defaultID);
+		var defaultSettingsFileDV = await this.getSettingsHolDefaultsFileDV();
+		var defaultID = defaultSettingsFileDV.identifier;
+		console.debug("getIdentifierDV is returning: ",defaultID);
 		return defaultID;
 	}
 	
-	async getCatLength(){
-		console.debug("getCatLength() was called.");
-		// returns the string value of the category length as set in the config
-		var catLength = await this.getHolBaseConfigValue("catLength");
-		console.debug("getCatLength is returning: ",catLength);
-		return catLength;
+	async getCatLengthDV(){
+		console.debug("getCatLengthDV() was called.");
+		//returns the string value of the identifier key as set in the config
+		var defaultSettingsFileDV = await this.getSettingsHolDefaultsFileDV();
+		var defaultID = defaultSettingsFileDV.category_length;
+		console.debug("getCatLengthDV is returning: ",defaultID);
+		return defaultID;
 	}
 	
-	async getStartingID(){
-		console.debug("getStartingID() was called.");
-		// returns the string value of the starting ID as set in the config
-		var startingID = await this.getHolBaseConfigValue("startingID");
-		console.debug("getStartingID is returning: ",startingID);
-		return startingID;
+	async getStartingIDNumDV(){
+		console.debug("getStartingIDNumDV() was called.");
+		//returns the string value of the identifier key as set in the config
+		var defaultSettingsFileDV = await this.getSettingsHolDefaultsFileDV();
+		var defaultID = defaultSettingsFileDV.starting_idnum;
+		console.debug("getStartingIDNumDV is returning: ",defaultID);
+		return defaultID;
 	}
 	
-	// Accessing IDs // 
-	
-	async getID(targetFileDV){
-		console.debug("getID(",targetFileDV,") was called.");
-		// this returns the id of a given file, gotten by its dataview-style file
-		if (targetFileDV == null) { throw new Error("No dataview file provided to get ID from! src: getID"); }
-		var defaultID = await this.getIdentifier();
-		var targetID = await this.getMetadataValue(targetFileDV,defaultID);
-		console.debug("getID is returning: ",targetID);
-		return targetID;
+	async getBlindIDsDV(){
+		console.debug("getBlindIDsDV() was called.");
+		//returns the string value of the identifier key as set in the config
+		var defaultSettingsFileDV = await this.getSettingsHolDefaultsFileDV();
+		var defaultID = defaultSettingsFileDV.blind_ids;
+		console.debug("getBlindIDsDV is returning: ",defaultID);
+		return defaultID;
 	}
 	
-	async getIDFromPath(path){
-		console.debug("getIDFromPath(" + path + ") was called.");
-		// this returns the id of a given file, gotten by its path or name
-		if (path == null) { throw new Error("No file path or name provided to get this ID from! src: getIDFromPath"); }
-		var targetFile = this.getDataviewFile(path);
-		var defaultID = await this.getIdentifier();
-		var targetID = await this.getMetadataValue(targetFile,defaultID);
-		console.debug("getIDFromPath is returning: ",targetID);
-		return targetID;
+	////////////////////// DANGER ZONE ////////////////////////////
+	// this code is new and missing debugging, some is incomplete.
+	
+	// Creating Files //
+		
+	async createNewFile(path,contents){
+		// UNFINISHED - NEEDS DEBUG LOGS
+		// This function exists in case we want to change the way files are accessed in the future. It simplifies refactoring.
+		await app.vault.create(path, contents);
 	}
 	
-	// Accessing Categories //
-	
-	async getPathToCatList(){
-		var catListFileName = await this.getBaseStructure("cat_list_file");
-		var catListPath = await this.getBaseStructure("rawdata_folder") + "/" + catListFileName;
-		return catListPath;
-	}
-	
-	async getCatListFile(){
-		var catListPath = await this.getPathToCatList();
-		var catFile = await app.vault.getAbstractFileByPath(catListPath);
-		return catFile;
-	}
-	
-	
-	async getCatListFileDV(){
-		var catListPath = await this.getPathToCatList();
-		var catFile = await this.getDataviewFile(catListPath);
-		return catFile;
-	}
-	
-	async getCatDirectory(cat){
-		console.debug("getCatDirectory(" + cat + ") was called.");
-		// this returns the path of the default directory of the given category
-		var catFile = await this.getCatListFileDV();
-		var myCatDirectory = catFile[cat][0];
-		console.debug("getCatDirectory is returning: ",myCatDirectory);
-		return myCatDirectory; 
-	} 
-	
-	async getCatDesc(cat){
-		console.debug("getCatDesc(" + cat + ") was called.");
-		// this returns the descriptive title of the given category
-		var catFile = await this.getCatListFileDV();
-		var myCatDesc = catFile[cat][1];
-		console.debug("getCatDesc is returning: ",myCatDesc);
-		return myCatDesc;
-	}
-	
-	async getCatTemplate(cat){
-		console.debug("getCatTemplate(" + cat + ") was called.");
-		// this returns the name of the default template of the given category
-		var catFile = await this.getCatListFileDV();
-		var myCatTpl = catFile[cat][2];
-		console.debug("getCatTemplate is returning: ",myCatTpl);
-		return myCatTpl;
-	}
-	
-	async doesCatExist(cat){
-		console.debug("doesCatExist(" + cat + ") was called.");
-		// this checks if a category currently exists and returns a boolean
-		var catListFileName = await this.getBaseStructure("cat_list_file");
-		var catListPath = await this.getBaseStructure("rawdata_folder") + "/" + catListFileName;
-		var catFile = await this.getDataviewFile(catListPath);
-		var myCat = catFile[cat];
-		var doesCat = false;
-		if (myCat != null) {doesCat = true;}
-		console.debug("doesCatExist is returning: ",doesCat);
-		return doesCat;
-	}
-	
-	async doesCatDirExist(cat){
-		// this returns true or false depending on whether the category directory exists
-		// i.e. that it actually has a folder in the specified location
-		var catDirPath = await this.getCatDirectory(cat);
-		var doesDirExist = await this.doesDirectoryExist(catDirPath);
-		return doesDirExist;		
-	}
-	
-	async getAllCats() {
-		// this returns an array of all categories from the category_list
-		var catFile = await this.getCatListFile();
-		var catKeys = await this.getListedFileKeys(catFile);
-		return catKeys;
-	}
-	
-	async doesDirectoryExist(path){
-		var checkDirectory = await app.vault.getAbstractFileByPath(path);
-		var doesDirExist = false;
-		if (checkDirectory != null) {
-			doesDirExist = true;
-		}
-		return doesDirExist;
-	}
-	
-	
-	
-	// Accessing Files in Bulk // 
-	
-	async getFilesInCatDV(cat) {
-		console.debug("getFilesInCatDV(" + cat + ") was called.");
-		// returns a list of dataview-type files in the given category
-		const dv = await DataviewAPI; var defaultID = await this.getIdentifier();
-		if (cat == null) { throw new Error("No category was provided to get files from! src: getFilesInCatDV"); }
-		cat = await cat.toLowerCase();
-		var fileList = await dv.pages().where(p => {
-			var p_bool = false;
-			if (p[defaultID] != undefined) { 
-				var p_id = p[defaultID].toString();
-				p_bool = p_id.includes(cat); 
-			}
-			return p_bool; 
-		});
-		if (fileList.length == 0){ fileList = null; }
-		if (fileList == null) { console.warn("Failed to retrieve dataview-type files! Directory may be empty. src: getFilesInCatDV"); }
-		console.debug("getFilesInCatDV is returning: ",fileList);
-		return fileList;
-	}
-	
-	async getIDsInCatDV(cat){
-		console.debug("getIDsInCatDV(" + cat + ") was called.");
-		// returns a list of IDs in the given category
-		var defaultID = await this.getIdentifier();
-		if (cat == null) { throw new Error("No category was provided to get files from! src: getIDsInCatDV"); }
-		var fileListDV = await this.getFilesInCatDV(cat);
-		var idList = new Array();
-		var i=0; while (i<fileListDV.length){idList[i] = await fileListDV[i][defaultID]; i++}
-		console.debug("getIDsInCatDV is returning: ",idList);
-		return idList;
-	}
-	
-	async getIDNumsInCatDV(cat){
-		console.debug("getIDNumsInCatDV(" + cat + ") was called.");
-		// returns a list of IDs in the given category
-		if (cat == null) { throw new Error("No category was provided to get files from! src: getIDNumsInCatDV"); }
-		var fileListDV = await this.getFilesInCatDV(cat);
-		var idList = new Array();
-		var i=0; while (i<fileListDV.length){
-			var thisIDNum = await fileListDV[i].idnum;
-			if (thisIDNum != null && Number.isInteger(thisIDNum)){
-				idList.push(thisIDNum);
-			} 
-			i++;
-		}
-		console.debug("getIDNumsInCatDV is returning: ",idList);
-		return idList;
-	}
-	
-	async removeCatFromIDString(givenID){
-		console.debug("removeCatFromIDString(" + givenID + ") was called.");
-		// This extracts the first cat-length characters in a string
-		var catLength = await this.getCatLength();
-		var strippedID = givenID.substring(catLength);
-		console.debug("removeCatFromIDString is returning: ",strippedID);
-		return strippedID;
-	}
-	
-	async getIDNumsFromIDList(idList){
-		console.debug("getIDNumsFromIDList(" + idList + ") was called.");
-		// this extracts the ID numbers from a list of IDs
-		var i=0; while (i<idList.length){
-			idList[i] = await this.removeCatFromIDString(idList[i]); 
-			i++
-			}
-		console.debug("getIDNumsFromIDList is returning: ",idList);
-		return idList;
-	}
-	
-	async getIDNumsInCatByIDDV(cat){
-		// this is a less efficient way of getting the idnums.
-		// it exists for edge cases where a user may not have assigned the idnum key to their vault
-		// please use getIDNumsInCatDV wherever possible
-		console.debug("getIDNumsInCatByIDDV(" + cat + ") was called.");
-		var idList = await this.getIDsInCatDV(cat);
-		var numList = await this.getIDNumsFromIDList(idList);
-		console.debug("getIDNumsInCatByIDDV is returning: ",numList);
-		return numList;
+	async getFileByPath(path){
+		// UNFINISHED - NEEDS DEBUG LOGS
+		var targetFile = await app.vault.getAbstractFileByPath(path);
+		return targetFile;
 	}
 		
-	async getNextIDNumInCat(cat){
-		console.debug("getNextIDNumInCat(" + cat + ") was called.");
-		var minimumID = await this.getStartingID();
-		var idList = await this.getIDNumsInCatDV(cat);
-		var idList = await idList.sort();
-		var lastID = idList[idList.length - 1];
-		var nextID = +lastID + 1;
-		console.debug("getNextIDNumInCat is returning: ",nextID);
-		return nextID;
+	async getFileContents(targetFile){
+		// UNFINISHED - NEEDS DEBUG LOGS
+		if (targetFile == null){throw new Error("No target file was provided to read the contents of!");}
+		var contents = await app.vault.read(targetFile);
+		if (contents == null){throw new Error("Failed to retrieve file contents!");}
+		return contents;
 	}
 	
-	async getNextIDInCat(cat){
-		console.debug("getNextIDInCat(" + cat + ") was called.");
-		var nextIDNum = await this.getNextIDNumInCat(cat);
-		var nextID = cat + nextIDNum;
-		console.debug("getNextIDInCat is returning: ",nextID);
-		return nextID;
+	async getFileContentsByPath(path){
+		// UNFINISHED - NEEDS DEBUG LOGS
+		var targetFile = await this.getFileByPath(path);
+		if (targetFile == null){throw new Error("Failed to retrieve file! Path may be incorrect or file may not exist.");}
+		var contents = await this.getFileContents(targetFile);
+		return contents;
 	}
 	
+	async replaceFileContents(targetFile, newContents){
+		// UNFINISHED - NEEDS DEBUG LOGS
+		await app.vault.modify(targetFile, newContents);
+	}
+	
+	async concatCatSettingsFileMetadata(cat){
+		// UNFINISHED - NEEDS DEBUG LOGS
+		// VOLATILE - LIKELY TO BE DEPRECATED 
+		var catSettingsID = await this.concatCatSettingsID(cat);
+		var catSettingsTag = await this.concatCatSettingsTag(cat);
+		var fileMetadata = "---\nid: " + catSettingsID + "\ntag: " + catSettingsTag + "\n---\n\n";
+		return fileMetadata;
+	}
+	
+	/* concatSettingsFilePath(){
+		// UNFINISHED - UNWRITTEN
+	} */
+	
+	/* async getCatListSettingsFileContent(){
+		// UNFINISHED - UNWRITTEN
+	}*/
+	
+	async createNewCatSettingsFile(cat){
+		// UNFINISHED - JUST EXPLORING, NEEDS TO BE REWRITTEN & BROKEN UP & EXPANDED ON
+		// VOLATILE - LIKELY TO BE HEAVILY RESTRUCTURED
+		console.debug("createNewCatSettingsFile() was called.");
 		
-	// Accessing Markdown Files //
-	
-	async getFileLinesByPath(path) {
-		console.debug("getFileLines(" + path + ") was called.");
-		// returns an array of lines from the requested file, by path
-		if (path == null) { throw new Error("No path provided to get lines from! src: getFileLinesByPath"); }
-		var listFile = await app.vault.getAbstractFileByPath(path);
-		if (listFile == null) { throw new Error("Failed to retrieve requested file! Path may be incorrect or file may not exist. src: getFileLinesByPath"); }
-		var listContents = await app.vault.read(listFile);
-		if (listContents == null || listContents == "") { console.warn("Requested file appears to be empty. Path may be incorrect. src: getFileLinesByPath"); }
-		var listLines = listContents.split("\n");
-		console.debug("getFileLinesByPath is returning: ",listLines);
-		return listLines;
-	}
-	
-	async getFileLines(targetFile) {
-		console.debug("getFileLines(", targetFile, ") was called.");
-		// returns an array of lines from the requested file, by abstractfile
-		if (targetFile == null) { throw new Error("Failed to retrieve requested file! Path may be incorrect or file may not exist. src: getFileLines"); }
-		var listContents = await app.vault.read(targetFile);
-		if (listContents == null || listContents == "") { console.warn("Requested file appears to be empty. Path may be incorrect. src: getFileLines"); }
-		var listLines = listContents.split("\n");
-		console.debug("getFileLines is returning: ",listLines);
-		return listLines;
-	}
+		// CHECK THAT CAT IS THE CORRECT LENGTH FOR QUICK EXIT ON COMMON ERROR
+		var defaultCatLength = await this.getCatLengthDV();
+		if (cat.length != defaultCatLength) {throw new Error("Cat is not the correct length!");}
 		
-	async getConfigFile(whichAuthor, whichConfig) {
-		console.debug("getConfigFile(" + whichAuthor + "," + whichConfig + ") was called.");
-		// returns abstractfile version of the specified config file. 
-		// path format will be config_whichAuthor_whichConfig.md
-		if (whichAuthor == null) { throw new Error("No config author provided! src: getConfigFile"); }
-		if (whichConfig == null) { throw new Error("No config file specified! src: getConfigFile"); }
-		var path = await this.getConfigFilePath(whichAuthor,whichConfig);
-		var thisConfigFile = await app.vault.getAbstractFileByPath(path);
-		if (thisConfigFile == null) { throw new Error("Failed to find config file! src: getConfigFile"); }
-		console.debug("getConfigFile is returning: ",thisConfigFile);
-		return thisConfigFile;
-	}
-	
-	async getConfigLines(whichAuthor, whichConfig){
-		console.debug("getConfigLines(" + whichAuthor + "," + whichConfig + ") was called.");
-		// returns an array of lines from the specified config file. 
-		// path format will be config_whichAuthor_whichConfig.md
-		if (whichAuthor == null) { throw new Error("No config author provided! src: getConfigLines"); }
-		if (whichConfig == null) { throw new Error("No config file specified! src: getConfigLines"); }
-		var configFile = await this.getConfigFile(whichAuthor, whichConfig);
-		var configLines = await this.getFileLines(configFile);
-		console.debug("getConfigLines is returning: ",configLines);
-		return configLines;
-	}
-	
-	// String Utiliites //
-	
-	removeLeadingSpaces(targetString){
-		console.debug("removeLeadingSpaces(" + targetString + ") was called.");
-		// this returns the provided string without any leading spaces
-		if (targetString == null) { throw new Error("No target string provided! src: removeLeadingSpaces"); }
-		while (targetString.charAt(0) == " ") { targetString = targetString.substr(1); }
-		console.debug("removeLeadingSpaces is returning: ",targetString);
-		return targetString;
-	}
-	
-	getKeyFromString(targetString){
-		console.debug("getKeyFromString(" + targetString + ") was called.");
-		// this returns the text before :: in a string, generally the key of a key:: value pair
-		if (targetString == null) { throw new Error("No target string provided! src: getKeyFromString"); }
-		var key = targetString.split("::")[0];
-		console.debug("getKeyFromString is returning: ",key);
-		return key;
-	}
-	
-	async getValueFromString(targetString){
-		console.debug("getValueFromString(" + targetString + ") was called.");
-		// this returns the text after :: in a string minus any leading spaces, generally the value of a key:: value pair
-		if (targetString == null) { throw new Error("No target string provided! src: getValueFromString"); }
-		var value = targetString.split("::")[1];
-		value = await this.removeLeadingSpaces(value);
-		console.debug("getValueFromString is returning: ",value);
-		return value;
-	}
-	
-	wrapStringWithSpacers(targetString){
-		targetString = "\n" + targetString + "\n";
-		return targetString;
-	}
-	
-	wrapStringWithYAMLHeader(targetString){
-		targetString = "---\n" + targetString + "\n---";
-		return targetString;
-	}
-	
-	wrapStringWithComment(targetString){
-		targetString = "%%\n" + targetString + "\n%%";
-		return targetString;
-	}
-	
-	wrapStringWithCommentSpacers(targetString){
-		targetString = "%%\n\n" + targetString + "\n\n%%";
-		return targetString;
-	}
-	
-	wrapStringWithCommentInline(targetString){
-		targetString = "%%" + targetString + "%%";
-		return targetString;
-	}
-	
-	wrapStringWithCommentInlineSpaces(targetString){
-		targetString = "%% " + targetString + " %%";
-		return targetString;
-	}
-	
-	wrapStringWithHTMLComment(targetString){
-		targetString = "<--\n" + targetString + "\n-->";
-		return targetString;
-	}
-	
-	wrapStringWithHTMLCommentSpacers(targetString){
-		targetString = "<--\n\n" + targetString + "\n\n-->";
-		return targetString;
-	}
-	
-	wrapStringWithHTMLCommentInline(targetString){
-		targetString = "<--" + targetString + "-->";
-		return targetString;
-	}
-	
-	wrapStringWithHTMLCommentInlineSpaces(targetString){
-		targetString = "<-- " + targetString + " -->";
-		return targetString;
-	}
-	
-	wrapStringWithTickCommentBlock(targetString,codeName){
-		if (codeName == null) {codeName = "";}
-		targetString = "```" + codeName + "\n" + targetString + "\n```";
-		return targetString;
-	}
-	
-	wrapStringWithTickCommentBlockSpacers(targetString,codeName){
-		if (codeName == null) {codeName = "";}
-		targetString = "```" + codeName + "\n\n" + targetString + "\n\n```";
-		return targetString;
-	}
-	
-	wrapStringWithTickCommentInline(targetString){
-		targetString = "`" + targetString + "`";
-		return targetString;
-	}
-	
-	wrapStringWithTickCommentInlineDV(targetString){
-		targetString = "`=" + targetString + "`";
-		return targetString;
-	}
-	
-	wrapStringWithDataviewBlock(targetString){
-		var resultString = this.wrapStringWithTickCommentBlock(targetString,"dataview");
-		return resultString;
-	}
-	
-	wrapStringWithDataviewBlockSpacers(targetString){
-		var resultString = this.wrapStringWithTickCommentBlockSpacers(targetString,"dataview");
-		return resultString;
-	}
-	
-	wrapStringWithInlineDVQuery(targetString){
-		targetString = "`=this." + targetString + "`";
-		return targetString;
-	}
-	
-	wrapStringWithInlineDVJS(targetString){
-		targetString = "`?=" + targetString + "`";
-		return targetString;
-	}
-	
-	concatYAML(givenKey, givenValue){
-		var resultString = givenKey + ": " + givenValue;
-		return resultString;
-	}
-	
-	concatNewline(givenStringArray){
-		var resultString = "";
-		var i=0; while (i < givenStringArray.length) {
-			if (i == givenStringArray.length - 1){
-				resultString = resultString + givenStringArray[i];
-			} else {
-				resultString = resultString + givenStringArray[i] + "\n";
-			}
-			i++;
-		}
-		return resultString;
-	}
-	
-	async concatNewlineYAML(givenStringArray){
-		var targetString = await this.concatNewline(givenStringArray);
-		var resultString = await this.wrapStringWithYAMLHeader(targetString);
-		return resultString;
-	}
-	
-	
-	// Accessing Keys & Values in Bulk // 
-	
-	async getListedFileKeys(targetFile){
-		console.debug("getListedFileKeys(", targetFile, ") was called.");
-		// returns the keys in the specified file; requires file with a key:: value\nkey::value format
-		// blank lines and duplicate entries will be automatically removed
-		if (targetFile == null) { throw new Error("No target file provided! src: getListedFileKeys"); }
-		var fileLines = await this.getFileLines(targetFile);
-		var fileKeys = new Array();
-		var thisKey = "";
-		var i = 0;
-		while (i < fileLines.length){
-			thisKey = this.getKeyFromString(fileLines[i]);
-			if (thisKey != null && thisKey != ""){ 
-				fileKeys.push(thisKey); 
-			}
-			i++;
-		}
-		fileKeys.sort();
-		var fileKeysNoDupes = new Array();
-		i=0; while (i < fileKeys.length){
-			if (fileKeys[i] != fileKeys[i-1]){
-				fileKeysNoDupes.push(fileKeys[i]);
-			}
-			i++;
-		}
+		// CHECK IF TEH CAT EXISTS AND THROW IF IT DOES TO AVOID DUPLICATES
+		var catExistence = await this.doesCatExistDV(cat);
+		if (catExistence == true){throw new Error("The category you requested to create already exists!");}
 		
-		console.debug("getListedFileKeys is returning: ",fileKeysNoDupes);
-		return fileKeysNoDupes;
+		// CREATE THE NEW SETTINGS FILE FOR THE CATEGORY
+		var path = await this.getDefaultPathBase("categories_settings");
+		var fileName = await this.concatCatSettingsName(cat);
+		var fullPath = path + "/" + fileName + ".md";
+		var fileContents = "";
+		var fileMetadata = await this.concatCatSettingsFileMetadata(cat);
+		fileContents += fileMetadata;
+		await this.createNewFile(fullPath, fileContents);
+		
+		//  WE NOW NEED TO ADD THE CATEGORY TO THE CATLIST SO IF THE USER
+		// TRIES TO ADD IT AGAIN, THE DUPLICATE CATEGORY ERROR WILL BE THROWN
+		var catListPath = await this.getDefaultPathBase("settings");
+		var catListPathFull = await catListPath + "/" + "categories" + ".md";
+		var catListFile = await this.getFileByPath(catListPathFull);
+		var catListContents = await this.getFileContents(catListFile);
+		catListContents += "\ncategory:: " + cat;
+		await this.replaceFileContents(catListFile, catListContents);
+		return catListContents;
 	}
 	
-	async getListedFileKeysByPath(path){
-		console.debug("getListedFileKeysByPath(" + path + ") was called.");
-		// returns the keys in the specified flie; requires file with a key:: value\nkey::value format
-		// blank lines and duplicate entries will be automatically removed
-		if (path == null) { throw new Error("No path provided to target file! src: getListedFileKeysByPath"); }
-		var fileLines = await this.getFileLinesByPath(path);
-		var fileKeys = new Array();
-		var thisKey = "";
-		var i = 0;
-		while (i < fileLines.length){
-			thisKey = this.getKeyFromString(fileLines[i]);
-			if (thisKey != null && thisKey != ""){ 
-				fileKeys.push(thisKey); 
-			}
-			i++;
-		}
-		fileKeys.sort();
-		var fileKeysNoDupes = new Array();
-		i=0; while (i < fileKeys.length){
-			if (fileKeys[i] != fileKeys[i-1]){
-				fileKeysNoDupes.push(fileKeys[i]);
-			}
-			i++;
-		}
-		console.debug("getListedFileKeysByPath is returning: ",fileLines);
-		return fileLines;
+	///////////////////// MISC UTILITIES //////////////////////
+		
+	// Handling Strings //
+	
+	wrapStringInQuotesYAML(targetString){
+		console.debug("wrapStringInQuotesYAML(" + targetString + ") was called.");
+		// this returns the given string with quotes around it, it's specifically used for wrapping YAML strings
+		// it exists in case the formatting of YAML changes at any point, and so we can add more advanced formatting for edge cases later
+		if (targetString == null){throw new Error("No target string was provided to wrap in quotes! src: wrapStringInQuotesYAML");}
+		var returnString = '"' + targetString + '"';
+		console.log("wrapStringInQuotesYAML is returning :", returnString);
+		return returnString;
 	}
 	
-	async getListedFileValues(targetFile){
-		// Do not set this to remove line breaks & do not sort it. At the moment,
-		// this is mostly used for config files where the position of every line matters.
-		console.debug("getListedFileValues(", targetFile, ") was called.");
-		// returns the values in the specified flie; requires file with a key:: value\nkey::value format
-		if (targetFile == null) { throw new Error("No target file provided! src: getListedFileValues"); }
-		var fileLines = await this.getFileLines(targetFile);
-		var i = 0;
-		while (i < fileLines.length){
-			fileLines[i] = this.getValueFromString(fileLines[i]); i++;
-			}
-		console.debug("getListedFileValues is returning: ",fileLines);
-		return fileLines;
+	wrapStringInQuotesDV(targetString){
+		console.debug("wrapStringInQuotesDV(" + targetString + ") was called.");
+		// this returns the given string with quotes around it, it's specifically used for wrapping DV source strings
+		// it exists in case the formatting of Dataview changes at any point, and so we can add more advanced formatting for edge cases later
+		if (targetString == null){throw new Error("No target string was provided to wrap in quotes! src: wrapStringInQuotesDV");}
+		var returnString = '"' + targetString + '"';
+		console.log("wrapStringInQuotesDV is returning :", returnString);
+		return returnString;
 	}
 	
-	async getListedFileValuesByPath(path){
-		// Do not set this to remove line breaks & do not sort it. At the moment,
-		// this is mostly used for config files, where the position of every line matters.
-		console.debug("getListedFileValuesByPath(" + path + ") was called.");
-		// returns the values in the specified flie; requires file with a key:: value\nkey::value format
-		if (path == null) { throw new Error("No path provided to target file! src: getListedFileValuesByPath"); }
-		var fileLines = await this.getFileLinesByPath(path);
-		var i = 0;
-		while (i < fileLines.length){fileLines[i] = await this.getValueFromString(fileLines[i]); i++;}
-		console.debug("getListedFileValuesByPath is returning: ",fileLines);
-		return fileLines;
+	addAfterNewline(targetString, newString){
+		return targetString + "/n" + newString;
+		
 	}
-	
-	async getKeysFromFileDV(fileDV){
-		// we should be able to do this with non-listed files somehow...
-		// UNFINISHED
-		const dv = DataviewAPI;
-	}
-	
-	async getConfigFilePath(whichAuthor,whichConfig){
-		console.debug("getConfigFilePath(" + whichAuthor + "," + whichConfig + ") was called.");
-		// returns an array of keys from the specified config file, or a file with a similar structure
-		if (whichAuthor == null) { throw new Error("No config author provided! src: getConfigFilePath"); }
-		if (whichConfig == null) { throw new Error("No config file specified! src: getConfigFilePath"); }
-		var rawdataFolder = await this.getBaseStructure("rawdata_folder");
-		var configPath = rawdataFolder + "/config_" + whichAuthor + "_" + whichConfig + ".md";
-		console.debug("getConfigFilePath is returning: ",configPath);
-		return configPath;
-	}
-	
-	async getConfigFileKeys(whichAuthor,whichConfig) {
-		console.debug("getConfigFileKeys(" + whichAuthor + "," + whichConfig + ") was called.");
-		// returns an array of keys from the specified config file
-		if (whichAuthor == null) { throw new Error("No config author provided! src: getConfigFileKeys"); }
-		if (whichConfig == null) { throw new Error("No config file specified! src: getConfigFileKeys"); }
-		var configPath = await this.getConfigFilePath(whichAuthor,whichConfig);
-		var configLines = await this.getListedFileKeysByPath(configPath);
-		console.debug("getConfigFileKeys is returning: ",configLines);
-		return configLines;
-	}
-
-	async getConfigFileValues(whichAuthor,whichConfig) {
-		console.debug("getConfigFileValues(" + whichAuthor + "," + whichConfig + ") was called.");
-		// returns an array of values from the specified config file
-		if (whichAuthor == null) { throw new Error("No config author provided! src: getConfigFileValues"); }
-		if (whichConfig == null) { throw new Error("No config file specified! src: getConfigFileValues"); }
-		var configPath = await this.getConfigFilePath(whichAuthor,whichConfig);
-		var configLines = await this.getListedFileValuesByPath(configPath);
-		console.debug("getConfigFileValues is returning: ",configLines);
-		return configLines;
-	}
-	
-	// // convenience functions for common config files // //
-	
-	async getHolConfigLines(whichConfig){
-		console.debug("getHolConfigLines() was called.");
-		// returns an array of lines from the specificed config file. 
-		// path format will be config_hol_whichConfig.md
-		if (whichConfig == null) { throw new Error("No config file specified! src: getHolConfigLines"); }
-		var configLines = await this.getConfigLines("hol", whichConfig);
-		console.debug("getHolConfigLines is returning: ",configLines);
-		return configLines;
-	}
-	
-	async getHolBaseConfigLines(){
-		console.debug("getHolBaseConfigLines() was called.");
-		// returns an array of lines from the config_hol_base.md file. 
-		var configLines = await this.getHolConfigLines("base");
-		console.debug("getHolBaseConfigLines is returning: ",configLines);
-		return configLines;
-	}
-	
-	async getHolConfigKeys(whichConfig){
-		console.debug("getHolConfigKeys() was called.");
-		if (whichConfig == null) { throw new Error("No config file specified! src: getHolConfigKeys"); }
-		var configLines = await this.getConfigFileKeys("hol",whichConfig);
-		console.debug("getHolConfigKeys is returning: ",configLines);
-		return configLines;
-	}
-	
-	async getHolBaseConfigKeys(){
-		console.debug("getHolBaseConfigKeys() was called.");
-		var configLines = await this.getHolConfigKeys("base");
-		console.debug("getHolBaseConfigKeys is returning: ",configLines);
-		return configLines;
-	}
-	
-	async getHolConfigValues(whichConfig){
-		console.debug("getHolConfigValues() was called.");
-		if (whichConfig == null) { throw new Error("No config file specified! src: getHolConfigValues"); }
-		var configLines = await this.getConfigFileValues("hol",whichConfig);
-		console.debug("getHolConfigValues is returning: ",configLines);
-		return configLines;
-	}
-	
-	async getHolBaseConfigValues(){
-		console.debug("getHolBaseConfigValues() was called.");
-		var configLines = await this.getHolConfigValues("base");
-		console.debug("getHolBaseConfigValues is returning: ",configLines);
-		return configLines;
-	}
-	
-	
-	// Building Metadata //
-	
-	async getNextIDAsYAML(cat){
-		var nextID = await this.getNextIDInCat(cat);
-		var defaultID = await this.getIdentifier();
-		var idString = await this.concatYAML(defaultID, nextID);
-		return idString;
-	}
-	
-	async getNextIDNumAsYAML(cat){
-		var nextIDNum = await this.getNextIDNumInCat(cat);
-		var idString = await this.concatYAML("idnum", nextIDNum);
-		return idString;
-	}
-	
-	async getNextIDAndNumAsYAML(cat){
-		var nextID = await this.getNextIDInCat(cat);
-		var nextIDNum = await this.getNextIDNumInCat(cat);
-		var defaultID = await this.getIdentifier();
-		var idString = await this.concatYAML(defaultID, nextID);
-		var idNumString = await this.concatYAML("idnum", nextIDNum);
-		var idLines = await this.concatNewline([idString,idNumString]);
-		return idLines;
-	}
-	
-	async getYAMLHeaderWithNextID(cat){
-		var nextID = await this.getNextIDInCat(cat);
-		var nextIDNum = await this.getNextIDNumInCat(cat);
-		var defaultID = await this.getIdentifier();
-		var idString = await this.concatYAML(defaultID, nextID);
-		var idNumString = await this.concatYAML("idnum", nextIDNum);
-		var idLines = await this.concatNewlineYAML([idString,idNumString]);
-		return idLines;
-	}
-	
-	
 
 }
