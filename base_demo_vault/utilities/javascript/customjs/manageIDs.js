@@ -7,7 +7,7 @@
 	// function naming convention:
 	// // any function that relies on another plugin's API should have its initials as its suffix:
 	// // // DV = Dataview, MM = Metadata Menu
-	// // that's only required if the function name doesn't already mention the API in another way.
+	// // that's only required if the function doesn't already mention the API by name.
 	
 	// variable naming convention:
 	// // likewise, any var with a unique value type derived from a plugin API should have its initials,
@@ -17,8 +17,7 @@
 	// // console.debug for code logic, console.info for user-driven activities,
 	// // console.log for notes, console.warn for possible issues (not throwable).
 	
-	// // // // // TO DO:::: ability to get next id, find settings files by tags, 
-	// // // // //           implement oop conventions, re-implement file parsing.
+	// // // // // TO DO:::: find settings files by tag, implement oop conventions
 	
 	abcTest(){
 		// my function!
@@ -315,6 +314,7 @@
 		return firstAttribute;
 	}	
 	
+
 	
 	// // Accessing Category Information: convenience functions // //
 	
@@ -435,7 +435,7 @@
 	
 	async getIdentifierDV(){
 		console.debug("getIdentifierDV() was called.");
-		//returns the string value of the identifier key as set in the config
+		// returns the string value of the identifier key as set in the config
 		var defaultSettingsFileDV = await this.getSettingsHolDefaultsFileDV();
 		var defaultID = defaultSettingsFileDV.identifier;
 		console.debug("getIdentifierDV is returning: ",defaultID);
@@ -444,7 +444,7 @@
 	
 	async getCatLengthDV(){
 		console.debug("getCatLengthDV() was called.");
-		//returns the string value of the identifier key as set in the config
+		// returns the string value of the identifier key as set in the config
 		var defaultSettingsFileDV = await this.getSettingsHolDefaultsFileDV();
 		var defaultID = defaultSettingsFileDV.category_length;
 		console.debug("getCatLengthDV is returning: ",defaultID);
@@ -453,7 +453,7 @@
 	
 	async getStartingIDNumDV(){
 		console.debug("getStartingIDNumDV() was called.");
-		//returns the string value of the identifier key as set in the config
+		// returns the string value of the identifier key as set in the config
 		var defaultSettingsFileDV = await this.getSettingsHolDefaultsFileDV();
 		var defaultID = defaultSettingsFileDV.starting_idnum;
 		console.debug("getStartingIDNumDV is returning: ",defaultID);
@@ -462,104 +462,211 @@
 	
 	async getBlindIDsDV(){
 		console.debug("getBlindIDsDV() was called.");
-		//returns the string value of the identifier key as set in the config
+		// returns the string value of the identifier key as set in the config
 		var defaultSettingsFileDV = await this.getSettingsHolDefaultsFileDV();
 		var defaultID = defaultSettingsFileDV.blind_ids;
 		console.debug("getBlindIDsDV is returning: ",defaultID);
 		return defaultID;
 	}
 	
-	////////////////////// DANGER ZONE ////////////////////////////
-	// this code is new and missing debugging, some is incomplete.
+	async getAppendIDDV(){
+		console.debug("getAppendIDDV() was called.");
+		// returns the string value of the identifier key as set in the config
+		var defaultSettingsFileDV = await this.getSettingsHolDefaultsFileDV();
+		var defaultID = defaultSettingsFileDV.append_id;
+		console.debug("getAppendIDDV is returning: ",defaultID);
+		return defaultID;
+	}
 	
-	// Creating Files //
-		
-	async createNewFile(path,contents){
-		// UNFINISHED - NEEDS DEBUG LOGS
-		// This function exists in case we want to change the way files are accessed in the future. It simplifies refactoring.
-		await app.vault.create(path, contents);
+	/////////////////////////// Accessing & Creating Files //////////////////////////////
+	
+	async concatFileNameDV(cat, givenTitle, thisID){
+		// the returned file name DOES NOT HAVE the extension! You must add it if creating a new file!
+		console.debug("concatFileNameDV(" + cat + ", " + givenTitle + ", " + thisID + ") was called.");
+		// returns a string with the correctly formatted title w/ next ID
+		// thisID is optional; if it's not provided, the next ID according the given cat is provided
+		if (cat == null) { throw new Error("No category was provided! src: concatFileNameDV"); }
+		if (givenTitle == null) { console.warn("No title was provided for concatenation! src: concatFileNameDV"); }
+		if (thisID == null) { console.warn("No ID was provided, so the next ID will be calculated. src: concatFileNameDV"); }
+		givenTitle = givenTitle.replace(/[|&;$%@!""''*:<>+,]/g, "");
+		var blindIDs = await this.getBlindIDsDV();
+		if  (blindIDs == false) {
+			if (thisID == null){
+				var nextID = await this.getNextIDDV(cat);
+				nextID = nextID.toUpperCase();
+			} else {
+				var nextID = thisID;
+			}
+			var append = await this.getAppendIDDV();
+			switch(append){
+				case "prepend":
+					var newTitle = nextID + " " + givenTitle;
+					console.debug("concatFileNameDV is returning: ",newTitle);
+					return newTitle;
+					break;
+				case "append":
+					var newTitle = givenTitle + " " + nextID;
+					console.debug("concatFileNameDV is returning: ",newTitle);
+					return newTitle;
+					break;
+			}
+		} else {
+			if (givenTitle == "" || givenTitle == "null"){
+				givenTitle = "Untitled";
+			}
+			console.debug("concatFileNameDV is returning: ",givenTitle);
+			return givenTitle;
+		}
+	}
+	
+	async createNewFileMD(path,contents,fileName){
+		// This already adds the md extension to the file path before creating the new file!
+		// use fileName ONLY IF it is not already part of the path
+		console.debug("createNewFileMD(" + path + ", " + contents + ") was called.");
+		// This function creates a new file at the specified path + .md, with the given contents
+		if (path == null) { throw new Error("No path was provided to create the file at! src: createNewFileMD"); }
+		if (contents == null) { 
+			console.warn("No contents were provided, defaulting to empty file! src: createNewFileMD"); 
+			contents = "";
+		}
+		if (fileName != null){ path = path + "/" + fileName + ".md"; } else { path = path + ".md"; }
+		await this.createNewFile(path,contents);
+		console.debug("New file was created at: " + path + " src: createNewFileMD");
+	}
+	
+	async createNewFile(path,contents,fileName){
+		// use fileName ONLY IF it is not already part of the path
+		console.debug("createNewFile(" + path + ", " + contents + ") was called.");
+		// creates a new file at the specified path with the given contents
+		// This function exists in case we need to change the way files are accessed in the future. It simplifies refactoring.
+		if (path == null) { throw new Error("No path was provided to create the file at! src: createNewFile"); }
+		if (contents == null) { console.warn("No contents were provided, defaulting to empty file! src: createNewFile"); }
+		if (fileName != null){ path = path + "/" + fileName; };
+		try {
+			await app.vault.create(path, contents);
+			console.debug("New file was created at: " + path + " src: createNewFile");
+		} catch {
+			throw new Error("Failed to create new file at: " + path + " src: createNewFile");
+		}
 	}
 	
 	async getFileByPath(path){
-		// UNFINISHED - NEEDS DEBUG LOGS
-		var targetFile = await app.vault.getAbstractFileByPath(path);
-		return targetFile;
+		console.debug("getFileByPath(" + path + ") was called.");
+		// returns the file with the specified path
+		// This function exists in case we need to change the way files are accessed in the future. It simplifies refactoring.
+		try {
+			var targetFile = await app.vault.getAbstractFileByPath(path);
+			console.debug("Requested file was found! src: getFileByPath");
+			return targetFile;
+		} catch {
+			throw new Error("Failed to find the requested file! src: getFileByPath");
+		}
 	}
 		
 	async getFileContents(targetFile){
-		// UNFINISHED - NEEDS DEBUG LOGS
-		if (targetFile == null){throw new Error("No target file was provided to read the contents of!");}
+		console.debug("getFileContents(", targetFile, ") was called.");
+		// returns the contents of the given file as a string
+		if (targetFile == null){throw new Error("No target file was provided to read the contents of! src: getFileContents");}
 		var contents = await app.vault.read(targetFile);
-		if (contents == null){throw new Error("Failed to retrieve file contents!");}
+		if (contents == null){throw new Error("Failed to retrieve file contents! src: getFileContents");}
+		console.debug("getFileContents is returning: ",contents);
 		return contents;
 	}
 	
 	async getFileContentsByPath(path){
-		// UNFINISHED - NEEDS DEBUG LOGS
+		console.debug("getFileContentsByPath(" + path + ") was called.");
+		// returns the contents of the file at the specified path as a string
+		if (path == null){throw new Error("No path to target file was provided to read the contents of! src: getFileContentsByPath");}
 		var targetFile = await this.getFileByPath(path);
-		if (targetFile == null){throw new Error("Failed to retrieve file! Path may be incorrect or file may not exist.");}
+		if (targetFile == null){throw new Error("Failed to retrieve file! Path may be incorrect or file may not exist. src: getFileContentsByPath");}
 		var contents = await this.getFileContents(targetFile);
+		if (contents == null){throw new Error("Failed to retrieve file contents! src: getFileContentsByPath");}
+		console.debug("getFileContentsByPath is returning: ",contents);
 		return contents;
 	}
 	
+	async getFileLines(targetFile){
+		console.debug("getFileLines(", targetFile, ") was called.");
+		// returns the lines of the specified file
+		if (targetFile == null){throw new Error("No target file was provided to get the lines of! src: getFileLines");}
+		var contents = await this.getFileContents(targetFile);
+		var contentLines = await this.getStringLines(contents);
+		console.debug("getFileLines is returning: ",contentLines);
+		return contentLines;
+	}
+	
+	async getFileLinesByPath(path) {
+		console.debug("getFileLinesByPath(" + path + ") was called.");
+		// returns the lines of the file at a specified path as an array
+		if (path == null){throw new Error("No path to target file was provided to read the lines of! src: getFileLinesByPath");}
+		var targetFile = await this.getFileByPath(path);
+		var fileLines = await this.getFileLines(targetFile);
+		console.debug("getFileLinesByPath is returning: ",fileLines);
+		return fileLines;
+	}
+	
 	async replaceFileContents(targetFile, newContents){
-		// UNFINISHED - NEEDS DEBUG LOGS
-		await app.vault.modify(targetFile, newContents);
+		console.debug("replaceFileContents(", targetFile, ", ", newContents, ") was called.");
+		// replaces the contents of the given file with the provided contents
+		if (targetFile == null){throw new Error("No target file was provided to replace the contents of! src: replaceFileContents");}
+		if (newContents == null){
+			console.warn("No new contents were provided! Existing contents will be replaced with nothing. src: replaceFileContents");
+			newContents = "";
+			}
+		try {
+			await app.vault.modify(targetFile, newContents);
+			console.debug("Successfully modified the target file! src: replaceFileContents");
+		} catch {
+			throw new Error("Failed to modify the targe file! src: replaceFileContents");
+		}
+	}
+	
+	async replaceFileContentsByPath(path, contents){
+		console.debug("replaceFileContentsByPath(" + path + ", " + newContents + ") was called.");
+		// replaces the contents of the file found at the given path with the provided contents
+		if (path == null){throw new Error("No path to target file was provided to replace the contents of! src: replaceFileContentsByPath");}
+		if (contents == null){
+			console.warn("No new contents were provided! Existing contents will be replaced with nothing. src: replaceFileContentsByPath");
+			contents = "";
+			}
+		var targetFile = await this.getFileByPath(path);
+		await this.replaceFileContents(targetFile,contents);
+		console.debug("Successfully modified the target file! src: replaceFileContentsByPath");
 	}
 	
 	async concatCatSettingsFileMetadata(cat){
-		// UNFINISHED - NEEDS DEBUG LOGS
-		// VOLATILE - LIKELY TO BE DEPRECATED 
+		console.debug("concatCatSettingsFileMetadata(", cat, ") was called.");
+		// UNFINISHED
 		var catSettingsID = await this.concatCatSettingsID(cat);
 		var catSettingsTag = await this.concatCatSettingsTag(cat);
 		var fileMetadata = "---\nid: " + catSettingsID + "\ntag: " + catSettingsTag + "\n---\n\n";
+		console.debug("concatCatSettingsFileMetadata is returning: ",fileMetadata);
 		return fileMetadata;
 	}
 	
-	/* concatSettingsFilePath(){
-		// UNFINISHED - UNWRITTEN
-	} */
-	
-	/* async getCatListSettingsFileContent(){
-		// UNFINISHED - UNWRITTEN
-	}*/
-	
-	async createNewCatSettingsFile(cat){
-		// UNFINISHED - JUST EXPLORING, NEEDS TO BE REWRITTEN & BROKEN UP & EXPANDED ON
-		// VOLATILE - LIKELY TO BE HEAVILY RESTRUCTURED
-		console.debug("createNewCatSettingsFile() was called.");
-		
-		// CHECK THAT CAT IS THE CORRECT LENGTH FOR QUICK EXIT ON COMMON ERROR
-		var defaultCatLength = await this.getCatLengthDV();
-		if (cat.length != defaultCatLength) {throw new Error("Cat is not the correct length!");}
-		
-		// CHECK IF TEH CAT EXISTS AND THROW IF IT DOES TO AVOID DUPLICATES
-		var catExistence = await this.doesCatExistDV(cat);
-		if (catExistence == true){throw new Error("The category you requested to create already exists!");}
-		
-		// CREATE THE NEW SETTINGS FILE FOR THE CATEGORY
-		var path = await this.getDefaultPathBase("categories_settings");
-		var fileName = await this.concatCatSettingsName(cat);
-		var fullPath = path + "/" + fileName + ".md";
-		var fileContents = "";
-		var fileMetadata = await this.concatCatSettingsFileMetadata(cat);
-		fileContents += fileMetadata;
-		await this.createNewFile(fullPath, fileContents);
-		
-		//  WE NOW NEED TO ADD THE CATEGORY TO THE CATLIST SO IF THE USER
-		// TRIES TO ADD IT AGAIN, THE DUPLICATE CATEGORY ERROR WILL BE THROWN
-		var catListPath = await this.getDefaultPathBase("settings");
-		var catListPathFull = await catListPath + "/" + "categories" + ".md";
-		var catListFile = await this.getFileByPath(catListPathFull);
-		var catListContents = await this.getFileContents(catListFile);
-		catListContents += "\ncategory:: " + cat;
-		await this.replaceFileContents(catListFile, catListContents);
-		return catListContents;
+	concatSettingsFilePath(){
+		// UNFINISHED
 	}
 	
-	///////////////////// MISC UTILITIES //////////////////////
-		
-	// Handling Strings //
+	async getCatListSettingsFileContent(){
+		// UNFINISHED
+	}
+	
+	
+	async createNewCatSettingsFile(cat){
+		// UNFINISHED
+	}
+
+	
+	////////////////////// Handling Strings //////////////////////
+	
+	getStringLines(targetString){
+		// returns the lines of a given string as an array
+		console.debug("getStringLines(" + targetString + ") was called.");
+		var stringLines = targetString.split("\n");
+		console.debug("getStringLines is returning: ",stringLines);
+		return stringLines;
+	}
 	
 	wrapStringInQuotesYAML(targetString){
 		console.debug("wrapStringInQuotesYAML(" + targetString + ") was called.");
@@ -584,6 +691,57 @@
 	addAfterNewline(targetString, newString){
 		return targetString + "/n" + newString;
 		
+	}
+
+	/////////////////////// Handling IDs ///////////////////////
+	
+	async getFilesInCatDV(cat) {
+		console.debug("getFilesInCatDV(" + cat + ") was called.");
+		// returns a list of dataview-type files in the given category
+		const dv = await DataviewAPI; var defaultID = await this.getIdentifierDV(); // NEED THIS
+		if (cat == null) { throw new Error("No category was provided to get files from! src: getFilesInCatDV"); }
+		cat = await cat.toLowerCase();
+		var fileList = await dv.pages("#" + cat); 
+		if (fileList.length == 0){ fileList = null; }
+		if (fileList == null) { console.warn("Failed to retrieve dataview-type files! Directory may be empty. src: getFilesInCatDV"); }
+		console.debug("getFilesInCatDV is returning: ",fileList);
+		return fileList;
+	}
+	
+	async getIDNumsDV(cat){
+		console.debug("getIDNumsDV(" + cat + ") was called.");
+		// returns a list of IDs in the given category
+		if (cat == null) { throw new Error("No category was provided to get files from! src: getIDNumsDV"); }
+		var fileListDV = await this.getFilesInCatDV(cat);
+		var idList = new Array();
+		var i=0; while (i<fileListDV.length){
+			var thisIDNum = await fileListDV[i].idnum;
+			if (thisIDNum != null && Number.isInteger(thisIDNum)){
+				idList.push(thisIDNum);
+			} 
+			i++;
+		}
+		console.debug("getIDNumsDV is returning: ",idList);
+		return idList;
+	}
+	
+	async getNextIDNumDV(cat){
+		console.debug("getNextIDNumDV(" + cat + ") was called.");
+		var minimumID = await this.getStartingIDNumDV();
+		var idList = await this.getIDNumsDV(cat);
+		var idList = await idList.sort();
+		var lastID = idList[idList.length - 1];
+		var nextID = +lastID + 1;
+		console.debug("getNextIDNumDV is returning: ",nextID);
+		return nextID;
+	}
+	
+	async getNextIDDV(cat){
+		console.debug("getNextIDDV(" + cat + ") was called.");
+		var nextIDNum = await this.getNextIDNumDV(cat);
+		var nextID = cat + nextIDNum;
+		console.debug("getNextIDDv is returning: ",nextID);
+		return nextID;
 	}
 
 }
