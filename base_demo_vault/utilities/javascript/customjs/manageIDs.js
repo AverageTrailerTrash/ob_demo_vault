@@ -698,7 +698,7 @@
 	async getFilesInCatDV(cat) {
 		console.debug("getFilesInCatDV(" + cat + ") was called.");
 		// returns a list of dataview-type files in the given category
-		const dv = await DataviewAPI; var defaultID = await this.getIdentifierDV(); // NEED THIS
+		const dv = await DataviewAPI; var defaultID = await this.getIdentifierDV();
 		if (cat == null) { throw new Error("No category was provided to get files from! src: getFilesInCatDV"); }
 		cat = await cat.toLowerCase();
 		var fileList = await dv.pages("#" + cat); 
